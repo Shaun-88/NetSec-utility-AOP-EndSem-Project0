@@ -35,7 +35,7 @@ export const tools: ToolDefinition[] = [
     sequenceNumber: "#001",
     complexity: "basic",
     tags: ["network", "speed", "bandwidth", "latency"],
-    Component: createPlaceholder("Internet Speed Test", "Measure bandwidth and latency.", "network", "Phase 4"),
+    Component: lazy(() => import("@/tools/internet-speed/InternetSpeedTool")),
   },
   {
     id: "ip-lookup",
@@ -46,7 +46,7 @@ export const tools: ToolDefinition[] = [
     sequenceNumber: "#002",
     complexity: "basic",
     tags: ["network", "ip", "geolocation", "asn"],
-    Component: createPlaceholder("IP Lookup", "Resolve public IP geolocation and ISP.", "network", "Phase 4"),
+    Component: lazy(() => import("@/tools/ip-lookup/IpLookupTool")),
   },
   {
     id: "dns-lookup",
@@ -57,7 +57,7 @@ export const tools: ToolDefinition[] = [
     sequenceNumber: "#003",
     complexity: "intermediate",
     tags: ["network", "dns", "records", "nameserver"],
-    Component: createPlaceholder("DNS Lookup", "Inspect DNS zone records.", "network", "Phase 4"),
+    Component: lazy(() => import("@/tools/dns-lookup/DnsLookupTool")),
   },
   {
     id: "subnet-calculator",
@@ -68,7 +68,7 @@ export const tools: ToolDefinition[] = [
     sequenceNumber: "#004",
     complexity: "basic",
     tags: ["network", "subnet", "cidr", "ip-range"],
-    Component: createPlaceholder("Subnet Calculator", "Calculate CIDR math and host ranges.", "network", "Phase 4"),
+    Component: lazy(() => import("@/tools/subnet-calculator/SubnetCalculatorTool")),
   },
   {
     id: "port-checker",
@@ -79,7 +79,7 @@ export const tools: ToolDefinition[] = [
     sequenceNumber: "#005",
     complexity: "intermediate",
     tags: ["network", "port", "firewall", "reachability"],
-    Component: createPlaceholder("Port Checker", "Verify diagnostic service ports.", "network", "Phase 4"),
+    Component: lazy(() => import("@/tools/port-checker/PortCheckerTool")),
   },
   {
     id: "ping-latency",
@@ -90,7 +90,7 @@ export const tools: ToolDefinition[] = [
     sequenceNumber: "#006",
     complexity: "basic",
     tags: ["network", "ping", "latency", "jitter"],
-    Component: createPlaceholder("Ping / Latency Checker", "Round-trip HTTP response timing.", "network", "Phase 4"),
+    Component: lazy(() => import("@/tools/ping-latency/PingLatencyTool")),
   },
 
   // --- Cybersecurity Tools (Phase 5) ---

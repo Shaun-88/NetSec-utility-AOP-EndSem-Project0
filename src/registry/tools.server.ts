@@ -11,4 +11,9 @@ export const serverHandlers: Record<
   () => Promise<{ default: ToolServerModule }>
 > = {
   template: () => import("@/tools/_template/server"),
+  "ip-lookup": () => import("@/tools/ip-lookup/server"),
+  "dns-lookup": () => import("@/tools/dns-lookup/server"),
+  "ping-latency": () => import("@/tools/ping-latency/server"),
+  "port-checker": () => import("@/tools/port-checker/server"),
+  "internet-speed": () => import("@/tools/internet-speed/server"),
 };

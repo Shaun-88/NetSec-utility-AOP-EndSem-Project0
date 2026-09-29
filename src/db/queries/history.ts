@@ -12,7 +12,7 @@ export async function saveToolHistory(
   data: unknown,
   target?: string,
 ): Promise<ToolHistoryRecord | null> {
-  if (!process.env.POSTGRES_URL) {
+  if (!process.env.POSTGRES_URL && !process.env.DATABASE_URL) {
     return null;
   }
   try {
@@ -41,7 +41,7 @@ export async function getUserToolHistory(
   userId: string,
   limit: number = 50,
 ): Promise<ToolHistoryRecord[]> {
-  if (!process.env.POSTGRES_URL) {
+  if (!process.env.POSTGRES_URL && !process.env.DATABASE_URL) {
     return [];
   }
   try {

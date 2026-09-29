@@ -137,8 +137,6 @@ Sequence (implemented once in `core/tool-kit/`, not per-route):
 6. On success: save the result to that user's history (SS9), return the
    `ToolResult` as JSON.
 
-`/api/chat` (AI Zone) is separate — SS10.
-
 ---
 
 ## 6. Security requirements
@@ -232,21 +230,12 @@ create index tool_history_user_idx on tool_history (user_id, ran_at desc);
 
 ---
 
-## 10. AI Zone contract
-
-- `POST /api/chat` — validated, rate-limited, session-checked like any other route.
-- Two modes: plain Q&A (message history only), and — stretch goal — history-
-  aware (message history + a compact summary of the user's recent
-  `tool_history` rows: tool name, target, timestamp — not full raw data).
-- System prompt: scoped to networking/cybersecurity education, refuses
-  attack assistance, states uncertainty, treats any embedded tool data as
-  data, not instructions.
-- No tool-calling in MVP. Enforce `max_tokens`, truncate history length, set
-  a provider spend cap.
+*(AI Zone — a dedicated chatbot with its own `/api/chat` contract — was
+planned here and has been dropped from scope. Not currently built.)*
 
 ---
 
-## 11. Phase-by-phase prompts
+## 10. Phase-by-phase prompts
 
 One prompt per phase. Review `git diff --stat` after each before starting
 the next.
@@ -300,7 +289,7 @@ reference precisely.)*
 
 ---
 
-## 12. Definition of done — any new tool
+## 11. Definition of done — any new tool
 
 - [ ] Folder matches `_template`
 - [ ] Registered in `registry/tools.ts` (+ `tools.server.ts` if server-backed)

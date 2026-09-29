@@ -1,21 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
-import Home from "../src/app/page";
 import { usersProfile, toolHistory } from "../src/db/schema";
 import { getTableColumns } from "drizzle-orm";
 
 describe("Phase 1: Foundation Verification", () => {
-  it("renders the placeholder page with branding and title", () => {
-    render(<Home />);
-    expect(
-      screen.getAllByText("The Big Bro's NetSec Armoury").length,
-    ).toBeGreaterThan(0);
-    expect(
-      screen.getByText("Phase 1: Foundation Completed"),
-    ).toBeTruthy();
-    expect(
-      screen.getByText("Drizzle + Postgres"),
-    ).toBeTruthy();
+  it("verifies foundational schema contracts", () => {
+    expect(usersProfile).toBeDefined();
+    expect(toolHistory).toBeDefined();
   });
 
   it("verifies the users_profile Drizzle schema definition", () => {

@@ -59,17 +59,18 @@ When a design choice is unclear, this principle is the tie-breaker.
 3. First-time only: **"What should we call you?"** prompt → this name is
    stored against their account and used across the app (greetings, header).
 4. Lands on the **Home page**:
-   - Persistent sidebar: three dropdown sections — **Network Tools**,
-     **CyberSec Tools**, **AI Zone** — plus **Settings** and **Account** fixed
-     at the bottom.
+   - Persistent sidebar: two dropdown sections — **Network Tools** and
+     **CyberSec Tools** — plus **Settings** and **Account** fixed at the
+     bottom.
    - Fixed **search bar** at the top (searches across all tools by name).
    - Main area: rotating fun facts/trivia about networking, the internet, and
      cybersecurity, plus a browsable listing of all tools (so the home page
      works as a second way to reach tools, not just the sidebar).
 5. Runs any tool → gets an immediate result → result is saved to that user's
    history/reports, viewable later from their account.
-6. Opens **AI Zone** for general networking/cybersecurity Q&A, and — if time
-   allows — to ask it to analyze their own history log.
+
+*(AI Zone — a dedicated networking/cybersecurity chatbot — was considered for
+this project and dropped from scope. Not currently planned.)*
 
 ---
 
@@ -108,11 +109,8 @@ security tool is wanted later, a breach-check — "has this email appeared in
 a known data breach" via the Have I Been Pwned API — is the legitimate
 equivalent and can be added as a future tool.)*
 
-### AI Zone
-- General Q&A on networking/cybersecurity topics.
-- Stretch goal (if time allows): the assistant can read the signed-in user's
-  own tool-history log and answer questions about it ("what have I checked
-  recently," "explain this result").
+*(Dropped: AI Zone — a dedicated networking/cybersecurity chatbot — was
+considered and removed from scope. Not currently planned.)*
 
 ---
 
@@ -125,7 +123,7 @@ Result { toolId, target, ranAt, data }
       ↓ saved to
 Per-user History/Reports (in the database)
       ↓ readable from
-Account page  ·  AI Zone (stretch goal, for context-aware answers)
+Account page
 ```
 
 Every tool returns the same shape (exact type in `docs/architecture.md` §2),
@@ -136,14 +134,14 @@ so new tools plug into the same history log and account view automatically.
 ## 6. Application flow & pages
 
 ```
-Site opened → Loading screen (min. 20s) → Welcome + Google Sign-In →
+Site opened → Loading screen (10s minimum boot sequence) → Welcome + Google Sign-In →
 "What should we call you?" (first time only) → Home →
-Network Tools / CyberSec Tools / AI Zone / Settings / Account
+Network Tools / CyberSec Tools / Settings / Account
 ```
 
 Pages: `/signin` (public), `/welcome` (name prompt, first login only),
 `/home`, `/tools/<toolId>` (one per tool, generated from the registry),
-`/ai-zone`, `/account` (history/reports), `/settings`. Every page except
+`/account` (history/reports), `/settings`. Every page except
 `/signin` is protected — signed-out visitors are redirected there.
 
 ---
@@ -173,8 +171,8 @@ Pages: `/signin` (public), `/welcome` (name prompt, first login only),
 
 Next.js (App Router) · React · TypeScript (strict) · Tailwind CSS · zod ·
 Auth.js/NextAuth (Google provider, JWT sessions) · **Vercel Postgres** ·
-Vitest + Playwright · Vercel AI SDK for AI Zone · GitHub Actions for CI ·
-deployed on Vercel.
+Vitest + Playwright · Recharts (for the Internet Speed Test graph) ·
+GitHub Actions for CI · deployed on Vercel.
 
 ---
 
@@ -185,27 +183,28 @@ deployed on Vercel.
 - No API keys or secrets in client code, ever.
 - Every tool input validated with zod before use.
 - Every database query on history/reports filters by the authenticated user.
-- Passwords are never stored, logged, or sent to the AI assistant.
+- Passwords are never stored or logged.
 - Full detail: `docs/architecture.md` §6.
 
 ---
 
 ## 10. Current status & phase order
 
-Nothing implemented yet. Work proceeds phase by phase, one prompt per phase,
-each reviewed before the next starts:
+Work proceeds phase by phase, one prompt per phase, each reviewed before the
+next starts. AI Zone has been dropped from scope entirely — not deferred,
+removed.
 
-1. **Foundation** — repo scaffold, Next.js + Tailwind + CI, blank page
+1. ✅ **Foundation** — repo scaffold, Next.js + Tailwind + CI, blank page
    deployed to Vercel.
-2. **Shared systems** — Google auth, Vercel Postgres connection, the
+2. ✅ **Shared systems** — Google auth, Vercel Postgres connection, the
    tool-module pattern (registry + shared API front door + result/history
    types) that every later tool will follow.
-3. **Login + Home + sidebar** — welcome/name-prompt flow, loading screen,
-   the three dropdown sections, top search bar, fun-facts area.
+3. 🔜 **Login + Home + sidebar** — welcome/name-prompt flow, the 10-second
+   boot-sequence loading screen, the two dropdown sections (Network Tools,
+   CyberSec Tools), top search bar, fun-facts area.
 4. **Network Tools.**
 5. **CyberSec Tools.**
-6. **AI Zone** (if time allows).
-7. **Testing, debugging, polish.**
+6. **Testing, debugging, polish.**
 
 ---
 

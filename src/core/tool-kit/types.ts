@@ -12,6 +12,10 @@ export interface ToolDefinition {
   category: ToolCategory;
   requiresServer: boolean;
   Component: React.LazyExoticComponent<React.ComponentType>;
+  tags?: string[];
+  complexity?: "basic" | "intermediate" | "advanced";
+  iconName?: string;
+  sequenceNumber?: string;
 }
 
 /**

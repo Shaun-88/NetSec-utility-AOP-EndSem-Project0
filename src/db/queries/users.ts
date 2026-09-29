@@ -8,7 +8,7 @@ import { eq } from "drizzle-orm";
  * Always strictly filters by authenticated user_id for tenant isolation.
  */
 export async function getUserProfile(userId: string): Promise<UserProfile | null> {
-  if (!process.env.POSTGRES_URL) {
+  if (!process.env.POSTGRES_URL && !process.env.DATABASE_URL) {
     return null;
   }
   try {
@@ -32,7 +32,7 @@ export async function ensureUserProfile(
   userId: string,
   displayName: string,
 ): Promise<UserProfile | null> {
-  if (!process.env.POSTGRES_URL) {
+  if (!process.env.POSTGRES_URL && !process.env.DATABASE_URL) {
     return {
       userId,
       displayName,
@@ -56,6 +56,34 @@ export async function ensureUserProfile(
     return inserted[0] || null;
   } catch (err) {
     console.error(`[DB Error] ensureUserProfile failed for ${userId}:`, err);
+    return null;
+  }
+}
+
+/**
+ * Updates a user's display name.
+ */
+export async function updateUserProfile(
+  userId: string,
+  displayName: string,
+): Promise<UserProfile | null> {
+  if (!process.env.POSTGRES_URL && !process.env.DATABASE_URL) {
+    return {
+      userId,
+      displayName,
+      createdAt: new Date(),
+    };
+  }
+  try {
+    const updated = await db
+      .update(usersProfile)
+      .set({ displayName })
+      .where(eq(usersProfile.userId, userId))
+      .returning();
+
+    return updated[0] || null;
+  } catch (err) {
+    console.error(`[DB Error] updateUserProfile failed for ${userId}:`, err);
     return null;
   }
 }

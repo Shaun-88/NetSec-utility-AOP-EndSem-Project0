@@ -1,24 +1,5 @@
-import React, { lazy } from "react";
+import { lazy } from "react";
 import type { ToolDefinition } from "@/core/tool-kit/types";
-
-/**
- * Helper to generate lazy placeholder components for tools pending Phases 4 & 5.
- * Uses React.createElement to avoid JSX in a .ts file.
- */
-const createPlaceholder = (
-  name: string,
-  description: string,
-  category: "network" | "cybersecurity",
-  phase: string,
-) =>
-  lazy(async () => {
-    const mod = await import("@/components/PlaceholderTool");
-    const toolId = name.toLowerCase().replace(/\s+/g, "-");
-    return {
-      default: () =>
-        React.createElement(mod.default, { toolId, name, description, category, phase }),
-    };
-  });
 
 /**
  * Authoritative registry of all tools in The Big Bro's NetSec Armoury.
@@ -103,7 +84,7 @@ export const tools: ToolDefinition[] = [
     sequenceNumber: "#007",
     complexity: "basic",
     tags: ["cybersecurity", "password", "crypto", "generator"],
-    Component: createPlaceholder("Password Generator", "Cryptographically secure password generation.", "cybersecurity", "Phase 5"),
+    Component: lazy(() => import("@/tools/password-generator/PasswordGeneratorTool")),
   },
   {
     id: "password-strength",
@@ -114,7 +95,7 @@ export const tools: ToolDefinition[] = [
     sequenceNumber: "#008",
     complexity: "intermediate",
     tags: ["cybersecurity", "entropy", "strength", "audit"],
-    Component: createPlaceholder("Password Strength Checker", "Evaluate entropy and crack time.", "cybersecurity", "Phase 5"),
+    Component: lazy(() => import("@/tools/password-strength/PasswordStrengthTool")),
   },
   {
     id: "hash-generator",
@@ -125,7 +106,7 @@ export const tools: ToolDefinition[] = [
     sequenceNumber: "#009",
     complexity: "basic",
     tags: ["cybersecurity", "hash", "sha256", "checksum"],
-    Component: createPlaceholder("Hash Generator", "Compute cryptographic text hashes.", "cybersecurity", "Phase 5"),
+    Component: lazy(() => import("@/tools/hash-generator/HashGeneratorTool")),
   },
   {
     id: "jwt-decoder",
@@ -136,7 +117,7 @@ export const tools: ToolDefinition[] = [
     sequenceNumber: "#010",
     complexity: "intermediate",
     tags: ["cybersecurity", "jwt", "token", "auth"],
-    Component: createPlaceholder("JWT Decoder", "Inspect JWT claims and header data.", "cybersecurity", "Phase 5"),
+    Component: lazy(() => import("@/tools/jwt-decoder/JwtDecoderTool")),
   },
   {
     id: "file-hash",
@@ -147,7 +128,7 @@ export const tools: ToolDefinition[] = [
     sequenceNumber: "#011",
     complexity: "intermediate",
     tags: ["cybersecurity", "file", "integrity", "checksum"],
-    Component: createPlaceholder("File Hash Checker", "Verify file integrity hashes.", "cybersecurity", "Phase 5"),
+    Component: lazy(() => import("@/tools/file-hash/FileHashTool")),
   },
   {
     id: "security-headers",
@@ -158,7 +139,7 @@ export const tools: ToolDefinition[] = [
     sequenceNumber: "#012",
     complexity: "advanced",
     tags: ["cybersecurity", "headers", "csp", "hsts", "audit"],
-    Component: createPlaceholder("Security Header Analyzer", "Audit HTTP security headers.", "cybersecurity", "Phase 5"),
+    Component: lazy(() => import("@/tools/security-headers/SecurityHeadersTool")),
   },
   {
     id: "binary-text",
@@ -169,6 +150,6 @@ export const tools: ToolDefinition[] = [
     sequenceNumber: "#013",
     complexity: "basic",
     tags: ["cybersecurity", "binary", "ascii", "encoding"],
-    Component: createPlaceholder("Binary ⇄ Text Converter", "Bidirectional binary and text converter.", "cybersecurity", "Phase 5"),
+    Component: lazy(() => import("@/tools/binary-text/BinaryTextTool")),
   },
 ];

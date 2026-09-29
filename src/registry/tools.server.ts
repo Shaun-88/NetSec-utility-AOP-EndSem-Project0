@@ -16,4 +16,7 @@ export const serverHandlers: Record<
   "ping-latency": () => import("@/tools/ping-latency/server"),
   "port-checker": () => import("@/tools/port-checker/server"),
   "internet-speed": () => import("@/tools/internet-speed/server"),
+  "security-headers": () => import("@/tools/security-headers/server"),
+  "security-header": () => import("@/tools/security-headers/server"),
+  "file-hash": () => import("@/tools/file-hash/server"),
 };

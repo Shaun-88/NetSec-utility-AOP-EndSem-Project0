@@ -11,6 +11,7 @@ export interface HeaderAuditItem {
   importance: "Critical" | "High" | "Medium" | "Low";
   description: string;
   recommendation: string;
+  remediationExample?: string;
   pointsEarned: number;
   pointsPossible: number;
 }

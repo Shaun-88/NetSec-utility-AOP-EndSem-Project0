@@ -5,6 +5,7 @@ import type {
 
 /**
  * Pure compute function for Security Header Analyzer.
+ * Evaluates HTTP response headers against modern industry standards and RFC best practices.
  * INVARIANT: Must be 100% pure with NO side-effects, network, or file I/O.
  */
 export function computeSecurityHeaderAudit(
@@ -13,7 +14,7 @@ export function computeSecurityHeaderAudit(
   statusCode: number,
   finalUrl: string = targetUrl,
 ): SecurityHeadersOutputData {
-  // Normalize header keys to lowercase
+  // Normalize header keys to lowercase for case-insensitive lookup
   const normalized: Record<string, string> = {};
   for (const [key, value] of Object.entries(rawHeaders)) {
     normalized[key.toLowerCase()] = value;
@@ -25,26 +26,44 @@ export function computeSecurityHeaderAudit(
   // 1. Content-Security-Policy (CSP) - 25 points
   const csp = normalized["content-security-policy"];
   if (csp) {
-    if (csp.includes("'unsafe-inline'") && !csp.includes("'nonce-") && !csp.includes("'sha256-")) {
+    const hasUnsafeInline = csp.includes("'unsafe-inline'") && !csp.includes("'nonce-") && !csp.includes("'sha256-");
+    const hasUnsafeEval = csp.includes("'unsafe-eval'");
+
+    if (hasUnsafeInline) {
       auditedHeaders.push({
         header: "Content-Security-Policy",
         value: csp,
         status: "warn",
         importance: "Critical",
-        description: "Defines approved sources of executable scripts, stylesheets, and assets.",
-        recommendation: "CSP is present but permits 'unsafe-inline' scripts without nonce or cryptographic hash protection.",
+        description: "Restricts sources of executable scripts, stylesheets, and network requests.",
+        recommendation: "CSP is active but contains 'unsafe-inline' without nonces or cryptographic hashes. Attackers can still inject inline scripts.",
+        remediationExample: "Content-Security-Policy: default-src 'self'; script-src 'self' 'nonce-{RANDOM}'; style-src 'self';",
         pointsEarned: 15,
         pointsPossible: 25,
       });
       score += 15;
+    } else if (hasUnsafeEval) {
+      auditedHeaders.push({
+        header: "Content-Security-Policy",
+        value: csp,
+        status: "warn",
+        importance: "Critical",
+        description: "Restricts sources of executable scripts, stylesheets, and network requests.",
+        recommendation: "CSP contains 'unsafe-eval', which allows dynamic code execution (eval, new Function). Consider removing it if not strictly required.",
+        remediationExample: "Content-Security-Policy: default-src 'self'; script-src 'self'; object-src 'none';",
+        pointsEarned: 20,
+        pointsPossible: 25,
+      });
+      score += 20;
     } else {
       auditedHeaders.push({
         header: "Content-Security-Policy",
         value: csp,
         status: "pass",
         importance: "Critical",
-        description: "Defines approved sources of executable scripts, stylesheets, and assets.",
-        recommendation: "Content Security Policy is strictly configured and protecting against Cross-Site Scripting (XSS).",
+        description: "Restricts sources of executable scripts, stylesheets, and network requests.",
+        recommendation: "Strict Content-Security-Policy configured. Provides high-tier defense against Cross-Site Scripting (XSS) and data injection.",
+        remediationExample: "Content-Security-Policy: default-src 'self'; script-src 'self'; object-src 'none';",
         pointsEarned: 25,
         pointsPossible: 25,
       });
@@ -55,8 +74,9 @@ export function computeSecurityHeaderAudit(
       header: "Content-Security-Policy",
       status: "fail",
       importance: "Critical",
-      description: "Mitigates XSS and data injection vulnerabilities by restricting resource origins.",
-      recommendation: "Missing Content-Security-Policy. Implement CSP to restrict unauthorized script execution and framing.",
+      description: "Restricts sources of executable scripts, stylesheets, and network requests.",
+      recommendation: "Missing Content-Security-Policy. Your site is exposed to Cross-Site Scripting (XSS), clickjacking, and rogue script injection.",
+      remediationExample: "Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; object-src 'none';",
       pointsEarned: 0,
       pointsPossible: 25,
     });
@@ -67,27 +87,44 @@ export function computeSecurityHeaderAudit(
   if (hsts) {
     const maxAgeMatch = hsts.match(/max-age=(\d+)/i);
     const maxAge = maxAgeMatch ? parseInt(maxAgeMatch[1], 10) : 0;
-    if (maxAge >= 31536000) {
-      // At least 1 year
+    const hasSubDomains = /includesubdomains/i.test(hsts);
+
+    if (maxAge >= 31536000 && hasSubDomains) {
+      // 1 year + includeSubDomains
       auditedHeaders.push({
         header: "Strict-Transport-Security",
         value: hsts,
         status: "pass",
         importance: "High",
-        description: "Forces browsers to exclusively connect over HTTPS, preventing SSL stripping.",
-        recommendation: "Strong HSTS policy active with long-duration max-age (≥ 1 year).",
+        description: "Forces web browsers to communicate exclusively over encrypted HTTPS connections.",
+        recommendation: "Excellent HSTS deployment. Browser connections are locked to HTTPS with a long max-age (≥ 1 year) and subdomain coverage.",
+        remediationExample: "Strict-Transport-Security: max-age=31536000; includeSubDomains; preload",
         pointsEarned: 20,
         pointsPossible: 20,
       });
       score += 20;
+    } else if (maxAge >= 31536000) {
+      auditedHeaders.push({
+        header: "Strict-Transport-Security",
+        value: hsts,
+        status: "pass",
+        importance: "High",
+        description: "Forces web browsers to communicate exclusively over encrypted HTTPS connections.",
+        recommendation: "Strong HSTS policy active (max-age ≥ 1 year). Consider adding 'includeSubDomains' to protect subdomains against SSL stripping.",
+        remediationExample: "Strict-Transport-Security: max-age=31536000; includeSubDomains; preload",
+        pointsEarned: 18,
+        pointsPossible: 20,
+      });
+      score += 18;
     } else {
       auditedHeaders.push({
         header: "Strict-Transport-Security",
         value: hsts,
         status: "warn",
         importance: "High",
-        description: "Forces browsers to exclusively connect over HTTPS, preventing SSL stripping.",
-        recommendation: `HSTS is present, but max-age (${maxAge}s) is shorter than recommended 1 year (31,536,000s).`,
+        description: "Forces web browsers to communicate exclusively over encrypted HTTPS connections.",
+        recommendation: `HSTS is present, but max-age (${maxAge}s) is shorter than the recommended 1 year (31,536,000s).`,
+        remediationExample: "Strict-Transport-Security: max-age=31536000; includeSubDomains; preload",
         pointsEarned: 12,
         pointsPossible: 20,
       });
@@ -98,8 +135,9 @@ export function computeSecurityHeaderAudit(
       header: "Strict-Transport-Security",
       status: "fail",
       importance: "High",
-      description: "Forces browsers to exclusively connect over HTTPS, preventing SSL stripping.",
-      recommendation: "Missing HSTS header. Deploy Strict-Transport-Security with max-age=31536000; includeSubDomains.",
+      description: "Forces web browsers to communicate exclusively over encrypted HTTPS connections.",
+      recommendation: "Missing HSTS header. Users are vulnerable to Man-in-the-Middle (MITM) attacks and unencrypted HTTP downgrade attacks.",
+      remediationExample: "Strict-Transport-Security: max-age=31536000; includeSubDomains; preload",
       pointsEarned: 0,
       pointsPossible: 20,
     });
@@ -113,8 +151,9 @@ export function computeSecurityHeaderAudit(
       value: xfo,
       status: "pass",
       importance: "High",
-      description: "Controls whether the website can be framed inside <frame>, <iframe>, or <embed>.",
-      recommendation: `Frame restriction active (${xfo}). Defending against UI redressing/clickjacking.`,
+      description: "Controls whether your website can be embedded in <frame>, <iframe>, or <embed> elements.",
+      recommendation: `Frame restriction active (${xfo}). Protects your users against Clickjacking and UI redressing attacks.`,
+      remediationExample: "X-Frame-Options: DENY",
       pointsEarned: 15,
       pointsPossible: 15,
     });
@@ -122,22 +161,37 @@ export function computeSecurityHeaderAudit(
   } else if (csp && csp.includes("frame-ancestors")) {
     auditedHeaders.push({
       header: "X-Frame-Options",
-      value: "(Superseded by CSP frame-ancestors directive)",
+      value: "(Modern replacement: CSP frame-ancestors directive active)",
       status: "pass",
       importance: "High",
-      description: "Modern frame protection provided via CSP frame-ancestors directive.",
-      recommendation: "Modern CSP frame-ancestors is in effect, providing equivalent or superior clickjacking protection.",
+      description: "Controls whether your website can be embedded in <frame>, <iframe>, or <embed> elements.",
+      recommendation: "Modern CSP frame-ancestors directive is active, providing superior clickjacking protection per W3C standards.",
+      remediationExample: "Content-Security-Policy: frame-ancestors 'none';",
       pointsEarned: 15,
       pointsPossible: 15,
     });
     score += 15;
+  } else if (xfo && xfo.toUpperCase().startsWith("ALLOW-FROM")) {
+    auditedHeaders.push({
+      header: "X-Frame-Options",
+      value: xfo,
+      status: "warn",
+      importance: "High",
+      description: "Controls whether your website can be embedded in <frame>, <iframe>, or <embed> elements.",
+      recommendation: "'ALLOW-FROM' is obsolete and ignored by all modern browsers. Use CSP 'frame-ancestors' instead.",
+      remediationExample: "Content-Security-Policy: frame-ancestors https://trusted-partner.com;",
+      pointsEarned: 5,
+      pointsPossible: 15,
+    });
+    score += 5;
   } else {
     auditedHeaders.push({
       header: "X-Frame-Options",
       status: "fail",
       importance: "High",
-      description: "Protects visitors against Clickjacking attacks by blocking unauthorized iframes.",
-      recommendation: "Missing X-Frame-Options. Set to 'DENY' or 'SAMEORIGIN' (or deploy CSP frame-ancestors).",
+      description: "Controls whether your website can be embedded in <frame>, <iframe>, or <embed> elements.",
+      recommendation: "Missing X-Frame-Options. Malicious sites can embed your pages inside an invisible iframe to steal clicks (Clickjacking).",
+      remediationExample: "X-Frame-Options: DENY",
       pointsEarned: 0,
       pointsPossible: 15,
     });
@@ -151,8 +205,9 @@ export function computeSecurityHeaderAudit(
       value: xcto,
       status: "pass",
       importance: "Medium",
-      description: "Prevents browsers from MIME-sniffing a response away from declared Content-Type.",
-      recommendation: "'nosniff' directive active. Mitigating drive-by download and content-type confusion attacks.",
+      description: "Prevents browsers from MIME-sniffing a response away from its declared Content-Type.",
+      recommendation: "'nosniff' directive active. Prevents browsers from misinterpreting text or image files as executable scripts.",
+      remediationExample: "X-Content-Type-Options: nosniff",
       pointsEarned: 15,
       pointsPossible: 15,
     });
@@ -162,8 +217,9 @@ export function computeSecurityHeaderAudit(
       header: "X-Content-Type-Options",
       status: "fail",
       importance: "Medium",
-      description: "Prevents browsers from MIME-sniffing a response away from declared Content-Type.",
-      recommendation: "Missing X-Content-Type-Options. Configure with 'nosniff'.",
+      description: "Prevents browsers from MIME-sniffing a response away from its declared Content-Type.",
+      recommendation: "Missing X-Content-Type-Options. Browsers may execute user-uploaded files as HTML or JavaScript if MIME types are ambiguous.",
+      remediationExample: "X-Content-Type-Options: nosniff",
       pointsEarned: 0,
       pointsPossible: 15,
     });
@@ -184,8 +240,9 @@ export function computeSecurityHeaderAudit(
         value: refPol,
         status: "pass",
         importance: "Medium",
-        description: "Controls how much referrer information is sent along with outbound requests.",
-        recommendation: `Privacy-preserving Referrer-Policy active (${refPol}).`,
+        description: "Controls how much URL information is sent in the 'Referer' header when navigating away from your site.",
+        recommendation: `Privacy-preserving Referrer-Policy active (${refPol}). Protects user browsing history and sensitive URL parameters.`,
+        remediationExample: "Referrer-Policy: strict-origin-when-cross-origin",
         pointsEarned: 15,
         pointsPossible: 15,
       });
@@ -196,8 +253,9 @@ export function computeSecurityHeaderAudit(
         value: refPol,
         status: "warn",
         importance: "Medium",
-        description: "Controls how much referrer information is sent along with outbound requests.",
-        recommendation: `Policy (${refPol}) may leak URL paths or tokens across insecure channels. Consider 'strict-origin-when-cross-origin'.`,
+        description: "Controls how much URL information is sent in the 'Referer' header when navigating away from your site.",
+        recommendation: `Policy (${refPol}) is overly permissive and may leak sensitive URL path tokens or user IDs to external websites.`,
+        remediationExample: "Referrer-Policy: strict-origin-when-cross-origin",
         pointsEarned: 8,
         pointsPossible: 15,
       });
@@ -208,8 +266,9 @@ export function computeSecurityHeaderAudit(
       header: "Referrer-Policy",
       status: "fail",
       importance: "Medium",
-      description: "Controls how much referrer information is sent along with outbound requests.",
-      recommendation: "Missing Referrer-Policy. Set 'strict-origin-when-cross-origin' to protect sensitive URL parameters.",
+      description: "Controls how much URL information is sent in the 'Referer' header when navigating away from your site.",
+      recommendation: "Missing Referrer-Policy. By default, browsers may send full URLs (including private queries or tokens) to external domains.",
+      remediationExample: "Referrer-Policy: strict-origin-when-cross-origin",
       pointsEarned: 0,
       pointsPossible: 15,
     });
@@ -223,8 +282,9 @@ export function computeSecurityHeaderAudit(
       value: permPol,
       status: "pass",
       importance: "Low",
-      description: "Restricts browser device APIs such as camera, microphone, and geolocation.",
-      recommendation: "Permissions Policy configured, constraining device sensor and hardware API access.",
+      description: "Restricts access to browser hardware APIs such as camera, microphone, accelerometer, and geolocation.",
+      recommendation: "Permissions Policy configured. Hardware sensor and device API access is strictly constrained.",
+      remediationExample: "Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()",
       pointsEarned: 10,
       pointsPossible: 10,
     });
@@ -234,8 +294,9 @@ export function computeSecurityHeaderAudit(
       header: "Permissions-Policy",
       status: "fail",
       importance: "Low",
-      description: "Restricts browser device APIs such as camera, microphone, and geolocation.",
-      recommendation: "Permissions-Policy not defined. Consider restricting unused device APIs (camera=(), microphone=(), geolocation=()).",
+      description: "Restricts access to browser hardware APIs such as camera, microphone, accelerometer, and geolocation.",
+      recommendation: "Permissions-Policy not defined. Consider restricting unused device APIs (camera, microphone, geolocation) to defend against rogue iframes.",
+      remediationExample: "Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()",
       pointsEarned: 0,
       pointsPossible: 10,
     });

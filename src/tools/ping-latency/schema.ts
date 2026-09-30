@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-function cleanTarget(val: string): string {
+export function cleanTarget(val: string): string {
   let cleaned = val.trim();
   if (!cleaned.startsWith("http://") && !cleaned.startsWith("https://")) {
     cleaned = `https://${cleaned}`;

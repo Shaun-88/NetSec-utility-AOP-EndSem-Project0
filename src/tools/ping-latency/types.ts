@@ -10,6 +10,13 @@ export interface PingProbeResult {
   error?: string;
 }
 
+export interface PingActivityRating {
+  name: string;
+  category: "Gaming" | "Conferencing" | "VoIP" | "Browsing";
+  status: "Optimal" | "Good" | "Acceptable" | "Degraded";
+  explanation: string;
+}
+
 export interface PingLatencyInput {
   target: string;
   count?: number;
@@ -27,5 +34,7 @@ export interface PingLatencyData {
   medianLatencyMs: number;
   jitterMs: number;
   rating: "Excellent" | "Good" | "Fair" | "Poor";
+  ratingSummary: string;
+  activities: PingActivityRating[];
   probes: PingProbeResult[];
 }

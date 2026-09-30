@@ -37,15 +37,24 @@ const serverModule: ToolServerModule<ValidatedPingLatencyInput, PingLatencyData>
       throw new Error(`Unable to resolve target host '${hostname}'. Check the domain.`);
     }
 
-    // 3. Execute sequential probes via safeFetch
+    // 3. Execute sequential probes via safeFetch with inter-probe spacing
     const probes: PingProbeResult[] = [];
 
     for (let i = 1; i <= probeCount; i++) {
+      if (i > 1) {
+        // 100ms inter-probe interval mimics standard ICMP spacing and prevents burst throttling
+        await new Promise((r) => setTimeout(r, 100));
+      }
+
       const start = performance.now();
       try {
         const response = await safeFetch(targetUrl, {
           method: "HEAD",
           timeoutMs: 3500,
+          headers: {
+            "User-Agent": "NetSecArmoury-PingProbe/1.0",
+            "Cache-Control": "no-cache",
+          },
         });
         const durationMs = performance.now() - start;
 

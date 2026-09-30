@@ -5,6 +5,13 @@
 export type ConversionMode = "text-to-binary" | "binary-to-text";
 export type BinaryDelimiter = "space" | "none" | "comma" | "hyphen";
 
+export interface CharacterByteBreakdown {
+  char: string;
+  asciiCode: number;
+  hex: string;
+  binary: string;
+}
+
 export interface BinaryTextInput {
   input: string;
   mode: ConversionMode;
@@ -19,6 +26,7 @@ export interface BinaryTextOutputData {
   byteCount: number;
   bitCount: number;
   hexEquivalent?: string;
+  charBreakdown?: CharacterByteBreakdown[];
   isValid: boolean;
   error?: string;
 }

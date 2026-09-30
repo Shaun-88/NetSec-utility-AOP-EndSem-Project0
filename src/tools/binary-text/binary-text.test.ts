@@ -16,6 +16,10 @@ describe("Binary ⇄ Text Converter Contract Tests", () => {
     expect(res.binary).toBe("01000001");
     expect(res.byteCount).toBe(1);
     expect(res.hex).toBe("41");
+    expect(res.charBreakdown).toHaveLength(1);
+    expect(res.charBreakdown[0].char).toBe("A");
+    expect(res.charBreakdown[0].asciiCode).toBe(65);
+    expect(res.charBreakdown[0].binary).toBe("01000001");
   });
 
   it("converts text to binary with delimiters", () => {
@@ -31,6 +35,7 @@ describe("Binary ⇄ Text Converter Contract Tests", () => {
     expect(res.text).toBe("Hi");
     expect(res.isValid).toBe(true);
     expect(res.byteCount).toBe(2);
+    expect(res.charBreakdown).toHaveLength(2);
   });
 
   it("detects invalid binary characters and incomplete byte chunks", () => {
@@ -51,6 +56,7 @@ describe("Binary ⇄ Text Converter Contract Tests", () => {
     });
     expect(toBinary.isValid).toBe(true);
     expect(toBinary.byteCount).toBe(11);
+    expect(toBinary.charBreakdown?.length).toBe(11);
 
     const backToText = computeBinaryText({
       input: toBinary.output,

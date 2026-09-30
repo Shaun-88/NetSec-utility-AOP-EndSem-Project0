@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import BootScreen from "../src/components/BootScreen";
+import BootProvider from "../src/components/BootProvider";
 import { tools } from "../src/registry/tools";
 
 describe("Phase 3: UI Shell & Boot Sequence", () => {
@@ -40,6 +41,32 @@ describe("Phase 3: UI Shell & Boot Sequence", () => {
     fireEvent.keyDown(window, { key: "Escape" });
 
     unmount();
+  });
+
+  it("BootProvider renders children directly without invisible class when initialBooted=true", () => {
+    const { container } = render(
+      <BootProvider initialBooted={true}>
+        <div data-testid="app-content">Armoury Home Content</div>
+      </BootProvider>,
+    );
+
+    expect(screen.getByTestId("app-content")).toBeDefined();
+    expect(screen.queryByText(/Initial boot sequence/i)).toBeNull();
+    expect(container.querySelector(".invisible")).toBeNull();
+  });
+
+  it("BootProvider renders both BootScreen and children without invisible class when initialBooted=false", () => {
+    const { container } = render(
+      <BootProvider initialBooted={false}>
+        <div data-testid="app-content">Protected Content</div>
+      </BootProvider>,
+    );
+
+    // BootScreen is rendered on top
+    expect(screen.getByText(/Initial boot sequence/i)).toBeDefined();
+    // Underlying content is rendered directly (covered by fixed BootScreen, not hidden by invisible)
+    expect(screen.getByTestId("app-content")).toBeDefined();
+    expect(container.querySelector(".invisible")).toBeNull();
   });
 
   it("proves tool registry slugs map to expected IDs", () => {

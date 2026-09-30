@@ -30,8 +30,25 @@ export default function BootScreen({
     [],
   );
 
+  const onCompleteRef = React.useRef(onComplete);
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
+
+  const hasFinishedRef = React.useRef(false);
+  const isFadingOutRef = React.useRef(false);
+
   useEffect(() => {
     const startTime = performance.now();
+
+    const finishSequence = () => {
+      if (hasFinishedRef.current) return;
+      hasFinishedRef.current = true;
+      setIsDone(true);
+      if (onCompleteRef.current) {
+        onCompleteRef.current();
+      }
+    };
 
     const interval = setInterval(() => {
       const now = performance.now();
@@ -50,26 +67,27 @@ export default function BootScreen({
         setTypedTitle(fullTitle);
       }
 
-      // Beat 3: Hand-off transition at minDurationMs
-      if (currentElapsed >= minDurationMs - 600 && !isFadingOut) {
+      // Beat 3: Hand-off transition at minDurationMs - 700ms
+      if (currentElapsed >= minDurationMs - 700 && !isFadingOutRef.current) {
+        isFadingOutRef.current = true;
         setIsFadingOut(true);
       }
 
       if (currentElapsed >= minDurationMs) {
         clearInterval(interval);
-        setIsDone(true);
-        if (onComplete) onComplete();
+        finishSequence();
       }
     }, 30);
 
     // Escape key shortcut to bypass for rapid developer testing
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
+        if (hasFinishedRef.current) return;
         clearInterval(interval);
+        isFadingOutRef.current = true;
         setIsFadingOut(true);
         setTimeout(() => {
-          setIsDone(true);
-          if (onComplete) onComplete();
+          finishSequence();
         }, 300);
       }
     };
@@ -80,7 +98,7 @@ export default function BootScreen({
       clearInterval(interval);
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [minDurationMs, fullTitle, onComplete, isFadingOut]);
+  }, [minDurationMs]);
 
   if (isDone) return null;
 

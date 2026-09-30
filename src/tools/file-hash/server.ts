@@ -25,6 +25,7 @@ const serverModule: ToolServerModule<ValidatedFileHashInput, FileHashOutputData>
         { algorithm: "MD5", hash: crypto.createHash("md5").update(buffer).digest("hex") },
         { algorithm: "SHA-1", hash: crypto.createHash("sha1").update(buffer).digest("hex") },
         { algorithm: "SHA-256", hash: crypto.createHash("sha256").update(buffer).digest("hex") },
+        { algorithm: "SHA-384", hash: crypto.createHash("sha384").update(buffer).digest("hex") },
         { algorithm: "SHA-512", hash: crypto.createHash("sha512").update(buffer).digest("hex") },
       );
     }

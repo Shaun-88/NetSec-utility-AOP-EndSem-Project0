@@ -1,0 +1,4 @@
+Armoury Security Verification Test Document
+Version: 1.0.0 (Official Release)
+Integrity Status: Genuine and Unmodified
+Purpose: Demonstrating SHA-256 and MD5 cryptographic checksum verification.

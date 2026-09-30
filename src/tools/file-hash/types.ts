@@ -2,8 +2,10 @@
  * Type contracts for the File Hash Checker Tool.
  */
 
+export type FileHashAlgorithm = "MD5" | "SHA-1" | "SHA-256" | "SHA-384" | "SHA-512";
+
 export interface FileHashItem {
-  algorithm: "MD5" | "SHA-1" | "SHA-256" | "SHA-512";
+  algorithm: FileHashAlgorithm;
   hash: string;
   isMatch?: boolean;
 }
@@ -25,4 +27,16 @@ export interface FileHashOutputData {
   verificationStatus: "verified" | "mismatch" | "none";
   matchedAlgorithm?: string;
   computedAt: string;
+}
+
+export interface SampleFileItem {
+  id: string;
+  name: string;
+  size: number;
+  formattedSize: string;
+  path: string;
+  expectedSha256: string;
+  expectedMd5: string;
+  description: string;
+  isTampered?: boolean;
 }

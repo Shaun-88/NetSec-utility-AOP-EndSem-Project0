@@ -181,7 +181,14 @@ export default function SettingsPage() {
           </div>
 
           <button
-            onClick={() => signOut({ callbackUrl: "/signin" })}
+            onClick={() => {
+              try {
+                sessionStorage.removeItem("boot_sequence_completed");
+                document.cookie =
+                  "app_booted=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+              } catch {}
+              signOut({ callbackUrl: "/signin" });
+            }}
             className="px-4 py-2.5 rounded-xl border border-[#ef4444]/30 bg-[#ef4444]/10 hover:bg-[#ef4444]/20 text-[#ef4444] text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
           >
             <LogOut className="w-4 h-4" />

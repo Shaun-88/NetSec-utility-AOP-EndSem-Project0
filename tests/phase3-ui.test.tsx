@@ -43,9 +43,10 @@ describe("Phase 3: UI Shell & Boot Sequence", () => {
     unmount();
   });
 
-  it("BootProvider renders children directly without invisible class when initialBooted=true", () => {
+  it("BootProvider renders children when boot_sequence_completed is set in sessionStorage", () => {
+    sessionStorage.setItem("boot_sequence_completed", "true");
     const { container } = render(
-      <BootProvider initialBooted={true}>
+      <BootProvider>
         <div data-testid="app-content">Armoury Home Content</div>
       </BootProvider>,
     );
@@ -53,18 +54,20 @@ describe("Phase 3: UI Shell & Boot Sequence", () => {
     expect(screen.getByTestId("app-content")).toBeDefined();
     expect(screen.queryByText(/Initial boot sequence/i)).toBeNull();
     expect(container.querySelector(".invisible")).toBeNull();
+    sessionStorage.clear();
   });
 
-  it("BootProvider renders both BootScreen and children without invisible class when initialBooted=false", () => {
+  it("BootProvider renders BootScreen when session is fresh", () => {
+    sessionStorage.clear();
     const { container } = render(
-      <BootProvider initialBooted={false}>
+      <BootProvider>
         <div data-testid="app-content">Protected Content</div>
       </BootProvider>,
     );
 
     // BootScreen is rendered on top
     expect(screen.getByText(/Initial boot sequence/i)).toBeDefined();
-    // Underlying content is rendered directly (covered by fixed BootScreen, not hidden by invisible)
+    // Underlying content is rendered directly (covered by fixed BootScreen, not trapped by invisible)
     expect(screen.getByTestId("app-content")).toBeDefined();
     expect(container.querySelector(".invisible")).toBeNull();
   });

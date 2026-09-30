@@ -19,13 +19,14 @@ export default function BootScreen({
 
   const fullTitle = "The Big Bro's NetSec Armoury";
 
-  // Timeline events based on minimum 10 seconds (10,000ms)
+  // Timeline events based on 10 seconds (10,000ms)
+  // All 4 events finish before 7800ms
   const statusLines = useMemo(
     () => [
-      { text: "Establishing secure session...", showAt: 3000, doneAt: 4200 },
-      { text: "Verifying system integrity...", showAt: 4400, doneAt: 5500 },
-      { text: "Loading diagnostic modules...", showAt: 5700, doneAt: 6900 },
-      { text: "Calibrating interface & analytics...", showAt: 7100, doneAt: 8400 },
+      { text: "Establishing secure session...", showAt: 2400, doneAt: 3600 },
+      { text: "Verifying system integrity...", showAt: 3800, doneAt: 5000 },
+      { text: "Loading diagnostic modules...", showAt: 5200, doneAt: 6400 },
+      { text: "Calibrating interface & analytics...", showAt: 6600, doneAt: 7800 },
     ],
     [],
   );
@@ -55,20 +56,20 @@ export default function BootScreen({
       const currentElapsed = now - startTime;
       setElapsed(currentElapsed);
 
-      // Beat 1: Letter-by-letter typing of title (between 400ms and 2800ms)
-      if (currentElapsed > 400 && currentElapsed < 2800) {
-        const progress = (currentElapsed - 400) / 2400;
+      // Beat 1: Letter-by-letter typing of title (between 400ms and 2400ms)
+      if (currentElapsed > 400 && currentElapsed < 2400) {
+        const progress = (currentElapsed - 400) / 2000;
         const charCount = Math.min(
           fullTitle.length,
           Math.floor(progress * fullTitle.length) + 1,
         );
         setTypedTitle(fullTitle.slice(0, charCount));
-      } else if (currentElapsed >= 2800) {
+      } else if (currentElapsed >= 2400) {
         setTypedTitle(fullTitle);
       }
 
-      // Beat 3: Hand-off transition at minDurationMs - 700ms
-      if (currentElapsed >= minDurationMs - 700 && !isFadingOutRef.current) {
+      // Smooth fade-out starts at 9500ms AFTER 100% has been held solidly
+      if (currentElapsed >= minDurationMs - 500 && !isFadingOutRef.current) {
         isFadingOutRef.current = true;
         setIsFadingOut(true);
       }
@@ -84,6 +85,7 @@ export default function BootScreen({
       if (e.key === "Escape") {
         if (hasFinishedRef.current) return;
         clearInterval(interval);
+        setElapsed(minDurationMs); // instantly jump to 100%
         isFadingOutRef.current = true;
         setIsFadingOut(true);
         setTimeout(() => {
@@ -102,12 +104,13 @@ export default function BootScreen({
 
   if (isDone) return null;
 
-  const progressPercent = Math.min(100, (elapsed / minDurationMs) * 100);
-  const isBrighteningPulse = elapsed >= 8600 && elapsed < minDurationMs;
+  // Progress reaches 100% cleanly at 8000ms, held solidly until 9500ms before fade
+  const progressPercent = Math.min(100, Math.floor((elapsed / 8000) * 100));
+  const isBrighteningPulse = elapsed >= 7800 && elapsed < minDurationMs;
 
   return (
     <div
-      className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#070a10] text-[#f1f5f9] select-none transition-opacity duration-700 ${
+      className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#070a10] text-[#f1f5f9] select-none transition-opacity duration-500 ${
         isFadingOut ? "opacity-0 pointer-events-none" : "opacity-100"
       }`}
     >

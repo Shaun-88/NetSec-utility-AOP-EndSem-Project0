@@ -1,45 +1,44 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
+import { usePathname } from "next/navigation";
 import BootScreen from "./BootScreen";
 
 export default function BootProvider({
   children,
-  initialBooted = false,
 }: {
   children: React.ReactNode;
-  initialBooted?: boolean;
 }) {
-  const [hasBooted, setHasBooted] = useState<boolean>(initialBooted);
+  // Start with hasBooted false so BootScreen covers the viewport from frame 0
+  const [hasBooted, setHasBooted] = useState<boolean>(false);
+  const pathname = usePathname();
 
   useEffect(() => {
-    // If server already verified the boot cookie, do nothing
-    if (initialBooted) return;
+    // If on signin, always reset boot flag so BootScreen plays first on fresh open / refresh
+    if (pathname === "/signin") {
+      try {
+        sessionStorage.removeItem("boot_sequence_completed");
+      } catch {}
+      setHasBooted(false);
+      return;
+    }
 
-    // Check if boot sequence has already executed in this browser session
+    // Inside authenticated app, check if boot sequence has already executed in this browser session
     try {
       const bootedSession = sessionStorage.getItem("boot_sequence_completed");
-      const hasCookie =
-        typeof document !== "undefined" &&
-        document.cookie.includes("app_booted=true");
-      if (bootedSession === "true" || hasCookie) {
+      if (bootedSession === "true") {
         setHasBooted(true);
       }
     } catch {
       // Fallback if storage is restricted
       setHasBooted(true);
     }
-  }, [initialBooted]);
+  }, [pathname]);
 
-  const handleBootComplete = React.useCallback(() => {
+  const handleBootComplete = useCallback(() => {
     try {
       sessionStorage.setItem("boot_sequence_completed", "true");
-      if (typeof document !== "undefined") {
-        document.cookie = "app_booted=true; path=/; SameSite=Lax";
-      }
-    } catch {
-      // ignore
-    }
+    } catch {}
     setHasBooted(true);
   }, []);
 

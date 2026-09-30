@@ -4,29 +4,40 @@ import React, { useEffect, useState } from "react";
 import BootScreen from "./BootScreen";
 
 export default function BootProvider({ children }: { children: React.ReactNode }) {
-  const [hasBooted, setHasBooted] = useState<boolean | null>(null);
+  // Start with hasBooted false so BootScreen covers the viewport immediately from frame 0
+  const [hasBooted, setHasBooted] = useState<boolean>(false);
 
   useEffect(() => {
     // Check if boot sequence has already executed in this browser session
-    const booted = sessionStorage.getItem("boot_sequence_completed");
-    if (booted === "true") {
+    try {
+      const booted = sessionStorage.getItem("boot_sequence_completed");
+      if (booted === "true") {
+        setHasBooted(true);
+      }
+    } catch {
+      // Fallback if sessionStorage is disabled
       setHasBooted(true);
-    } else {
-      setHasBooted(false);
     }
   }, []);
 
   const handleBootComplete = () => {
-    sessionStorage.setItem("boot_sequence_completed", "true");
+    try {
+      sessionStorage.setItem("boot_sequence_completed", "true");
+    } catch {
+      // ignore
+    }
     setHasBooted(true);
   };
 
   return (
     <>
-      {hasBooted === false && (
+      {!hasBooted && (
         <BootScreen onComplete={handleBootComplete} minDurationMs={10000} />
       )}
-      {children}
+      {/* Hide children completely while booting to prevent any underlying login or page flash */}
+      <div className={!hasBooted ? "invisible pointer-events-none" : "visible"}>
+        {children}
+      </div>
     </>
   );
 }

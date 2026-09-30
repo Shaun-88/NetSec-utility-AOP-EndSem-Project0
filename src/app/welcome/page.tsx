@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Shield, ArrowRight, User, Terminal } from "lucide-react";
 
@@ -9,6 +9,17 @@ export default function WelcomePage() {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/user/profile")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.displayName && data.displayName !== "Security Agent") {
+          router.replace("/home");
+        }
+      })
+      .catch(() => {});
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

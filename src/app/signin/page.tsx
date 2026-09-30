@@ -1,8 +1,13 @@
 import React from "react";
-import { signIn } from "@/auth";
+import { auth, signIn } from "@/auth";
+import { redirect } from "next/navigation";
 import { Shield, Lock } from "lucide-react";
 
-export default function SignInPage() {
+export default async function SignInPage() {
+  const session = await auth();
+  if (session?.user?.id) {
+    redirect("/home");
+  }
   return (
     <div className="min-h-screen cyber-grid bg-[#080b11] text-[#f1f5f9] flex items-center justify-center p-4">
       <div className="w-full max-w-md border border-[#182234] bg-[#0d131f] rounded-2xl p-8 shadow-2xl relative overflow-hidden space-y-6">

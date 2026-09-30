@@ -144,16 +144,17 @@ function md5(str: string): string {
 /**
  * Computes SHA family hash using Web Crypto API.
  */
-async function computeSha(
+function computeSha(
   algorithm: "SHA-1" | "SHA-256" | "SHA-384" | "SHA-512",
   data: string,
 ): Promise<string> {
   const bytes = new TextEncoder().encode(data);
   const cryptoObj = globalThis.crypto;
 
-  const buffer = await cryptoObj.subtle.digest(algorithm, bytes);
-  const hashArray = Array.from(new Uint8Array(buffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+  return cryptoObj.subtle.digest(algorithm, bytes).then((buffer) => {
+    const hashArray = Array.from(new Uint8Array(buffer));
+    return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+  });
 }
 
 /**
@@ -217,6 +218,8 @@ export async function computeHashes(
       bitLength: 128,
       byteLength: 16,
       securityStatus: "Deprecated",
+      plainDescription: "128-bit legacy digest. Fast, but mathematically compromised by collision vulnerabilities.",
+      commonUse: "Non-security file verification, media deduplication, and legacy database record checks.",
     },
     {
       algorithm: "SHA-1",
@@ -224,6 +227,8 @@ export async function computeHashes(
       bitLength: 160,
       byteLength: 20,
       securityStatus: "Legacy",
+      plainDescription: "160-bit digest designed by NSA in 1995. Proven collision-vulnerable and deprecated by web browsers.",
+      commonUse: "Git commit identifiers (historical default), older software packages, and archive indexing.",
     },
     {
       algorithm: "SHA-256",
@@ -231,6 +236,8 @@ export async function computeHashes(
       bitLength: 256,
       byteLength: 32,
       securityStatus: "Secure (Recommended)",
+      plainDescription: "The global gold standard for cryptography and data integrity. Practically collision-proof.",
+      commonUse: "SSL/TLS certificates, Bitcoin & blockchain state hashes, and software release verification.",
     },
     {
       algorithm: "SHA-384",
@@ -238,6 +245,8 @@ export async function computeHashes(
       bitLength: 384,
       byteLength: 48,
       securityStatus: "High Security",
+      plainDescription: "384-bit truncated variant of SHA-512 designed for ultra-high security environments and NSA Suite B.",
+      commonUse: "Government defense communications, top-tier banking protocols, and root certificate authorities.",
     },
     {
       algorithm: "SHA-512",
@@ -245,6 +254,8 @@ export async function computeHashes(
       bitLength: 512,
       byteLength: 64,
       securityStatus: "High Security",
+      plainDescription: "Massive 512-bit digest offering immense mathematical resilience against quantum and supercomputer attacks.",
+      commonUse: "Long-term archive security, cryptographic key derivation (KDFs), and sensitive financial ledgers.",
     },
   ];
 

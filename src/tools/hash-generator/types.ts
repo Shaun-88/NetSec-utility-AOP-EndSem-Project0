@@ -8,6 +8,8 @@ export interface HashItem {
   bitLength: number;
   byteLength: number;
   securityStatus: "Deprecated" | "Legacy" | "Secure (Recommended)" | "High Security";
+  plainDescription: string;
+  commonUse: string;
 }
 
 export interface HashGeneratorInput {

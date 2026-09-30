@@ -28,9 +28,11 @@ export interface PasswordStrengthData {
   entropyBits: number;
   characterPoolSize: number;
   rating: StrengthRating;
+  ratingDescription: string;
   score: number; // 0 to 100
   checklist: PasswordChecklist;
   crackTimes: CrackTimeEstimates;
   feedback: string[];
   warnings: string[];
+  actionableTips: string[];
 }

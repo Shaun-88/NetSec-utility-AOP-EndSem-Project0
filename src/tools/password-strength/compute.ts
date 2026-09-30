@@ -32,7 +32,7 @@ const SEQUENTIAL_RUNS = [
 /**
  * Converts seconds into a human-readable duration string.
  */
-function formatCrackTime(seconds: number): string {
+export function formatCrackTime(seconds: number): string {
   if (seconds < 1) return "Instantaneous";
   if (seconds < 60) return `${Math.round(seconds)} seconds`;
   if (seconds < 3600) return `${Math.round(seconds / 60)} minutes`;
@@ -42,6 +42,71 @@ function formatCrackTime(seconds: number): string {
   if (seconds < 31536000 * 10000) return `${Math.round(seconds / (31536000 * 100))} centuries`;
   if (seconds < 31536000 * 1e9) return `${Math.round(seconds / (31536000 * 1000))} millennia`;
   return "Trillions of years";
+}
+
+/**
+ * Returns plain-language description for the strength rating.
+ */
+export function getRatingDescription(rating: StrengthRating): string {
+  switch (rating) {
+    case "Very Weak":
+      return "Extremely vulnerable. Automated tools or simple word lists can crack this password in a fraction of a second.";
+    case "Weak":
+      return "Below modern security standards. Vulnerable to fast dictionary attacks or rapid GPU brute-force.";
+    case "Moderate":
+      return "Decent for low-risk accounts, but susceptible to dedicated offline cracking if a service database is ever breached.";
+    case "Strong":
+      return "Robust security posture. Will withstand offline brute-force attacks from modern graphics card clusters for years.";
+    case "Very Strong":
+      return "Exceptional defense. Practically impossible to crack within human lifespans using present computing power.";
+  }
+}
+
+/**
+ * Generates concrete, actionable guidance based on identified vulnerabilities.
+ */
+export function generateActionableTips(
+  length: number,
+  checklist: PasswordChecklist,
+  warnings: string[],
+): string[] {
+  const tips: string[] = [];
+
+  if (length < 12) {
+    tips.push("Make it longer: Aim for at least 14–16 characters. Length has the single biggest exponential impact on crack resistance.");
+  }
+
+  if (warnings.some((w) => w.includes("dictionary term"))) {
+    tips.push("Remove dictionary words: Replace recognizable names or common terms with completely unpredictable character strings or multi-word passphrases.");
+  }
+
+  if (warnings.some((w) => w.includes("predictable sequence"))) {
+    tips.push("Avoid sequential keys: Attackers' dictionary tools check keyboard runs like 'qwerty' and numbers like '123' first.");
+  }
+
+  if (warnings.some((w) => w.includes("repeating characters"))) {
+    tips.push("Eliminate repeating characters: Consecutive duplicates (e.g. 'aaa' or '111') reduce entropy without adding real security.");
+  }
+
+  if (!checklist.hasUppercase) {
+    tips.push("Add uppercase letters (A–Z) to expand the possible character choices per position.");
+  }
+
+  if (!checklist.hasNumbers) {
+    tips.push("Mix in numbers (0–9) to prevent attackers from using letter-only word dictionaries.");
+  }
+
+  if (!checklist.hasSymbols) {
+    tips.push("Add special symbols (!@#$%^&*) to maximize mathematical randomness (entropy).");
+  }
+
+  if (tips.length === 0) {
+    tips.push("Never reuse this password across other accounts to protect against credential stuffing breaches.");
+    tips.push("Store this password in a trusted password manager so you don't have to write it down.");
+    tips.push("Enable Multi-Factor Authentication (2FA) on the service for defense in depth.");
+  }
+
+  return tips;
 }
 
 /**
@@ -60,6 +125,7 @@ export function computePasswordStrength(
       entropyBits: 0,
       characterPoolSize: 0,
       rating: "Very Weak",
+      ratingDescription: "Enter a password to begin real-time entropy and security analysis.",
       score: 0,
       checklist: {
         hasUppercase: false,
@@ -76,6 +142,11 @@ export function computePasswordStrength(
       },
       feedback: ["Enter a password to begin analysis."],
       warnings: [],
+      actionableTips: [
+        "Aim for at least 14 to 16 characters for strong defense.",
+        "Combine uppercase, lowercase, numbers, and symbols.",
+        "Avoid using dictionary words, names, or birthdays.",
+      ],
     };
   }
 
@@ -156,16 +227,7 @@ export function computePasswordStrength(
     nationStateSupercomputer: formatCrackTime(superSec),
   };
 
-  // 7. Actionable Feedback
-  const feedback: string[] = [];
-  if (length < 12) feedback.push("Increase length to at least 12–16 characters for robust resistance.");
-  if (!hasUppercase) feedback.push("Add uppercase letters (A–Z) to expand character space.");
-  if (!hasNumbers) feedback.push("Add numeric digits (0–9).");
-  if (!hasSymbols) feedback.push("Add special symbols (!@#$%^&*) to maximize entropy.");
-  if (feedback.length === 0 && warnings.length === 0) {
-    feedback.push("Excellent entropy and character distribution. Strong defense profile.");
-  }
-
+  // 7. Actionable Feedback & Checklist
   const checklist: PasswordChecklist = {
     hasUppercase,
     hasLowercase,
@@ -175,15 +237,29 @@ export function computePasswordStrength(
     hasNoCommonPatterns: warnings.length === 0,
   };
 
+  const feedback: string[] = [];
+  if (length < 12) feedback.push("Increase length to at least 12–16 characters for robust resistance.");
+  if (!hasUppercase) feedback.push("Add uppercase letters (A–Z) to expand character space.");
+  if (!hasNumbers) feedback.push("Add numeric digits (0–9).");
+  if (!hasSymbols) feedback.push("Add special symbols (!@#$%^&*) to maximize entropy.");
+  if (feedback.length === 0 && warnings.length === 0) {
+    feedback.push("Excellent entropy and character distribution. Strong defense profile.");
+  }
+
+  const actionableTips = generateActionableTips(length, checklist, warnings);
+  const ratingDescription = getRatingDescription(rating);
+
   return {
     length,
     entropyBits: effectiveEntropy,
     characterPoolSize: poolSize,
     rating,
+    ratingDescription,
     score,
     checklist,
     crackTimes,
     feedback,
     warnings,
+    actionableTips,
   };
 }

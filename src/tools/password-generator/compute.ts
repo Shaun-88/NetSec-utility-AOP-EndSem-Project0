@@ -1,5 +1,9 @@
 import type { ValidatedPasswordGeneratorInput } from "./schema";
-import type { PasswordGeneratorOutputData, GeneratedPasswordItem } from "./types";
+import type {
+  PasswordGeneratorOutputData,
+  GeneratedPasswordItem,
+  PasswordStrengthTier,
+} from "./types";
 
 const UPPERCASE = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const LOWERCASE = "abcdefghijklmnopqrstuvwxyz";
@@ -10,6 +14,36 @@ const AMBIGUOUS = "1lI0OosS52Z";
 export interface CharPoolResult {
   pool: string;
   requiredCharsets: string[];
+}
+
+/**
+ * Determines a human-readable strength classification based on Shannon entropy bits.
+ */
+export function getStrengthTier(entropyBits: number): PasswordStrengthTier {
+  if (entropyBits >= 100) return "Uncrackable";
+  if (entropyBits >= 80) return "Very Strong";
+  if (entropyBits >= 60) return "Strong";
+  if (entropyBits >= 40) return "Moderate";
+  return "Weak";
+}
+
+/**
+ * Provides an estimated brute-force crack time against modern high-performance GPU arrays.
+ */
+export function getCrackTimeEstimate(entropyBits: number): string {
+  if (entropyBits >= 100) {
+    return "Centuries to billions of years (exceeds age of the universe)";
+  }
+  if (entropyBits >= 80) {
+    return "Millions of years against modern GPU cracking clusters";
+  }
+  if (entropyBits >= 60) {
+    return "Hundreds to thousands of years against dedicated offline attacks";
+  }
+  if (entropyBits >= 40) {
+    return "Several days to months against automated dictionary/GPU tools";
+  }
+  return "Instantly to a few hours with consumer graphics hardware";
 }
 
 /**
@@ -90,6 +124,8 @@ export function computePasswords(
 
   const poolSize = pool.length;
   const entropyBits = Math.round(input.length * Math.log2(poolSize) * 10) / 10;
+  const strengthTier = getStrengthTier(entropyBits);
+  const crackTimeEstimate = getCrackTimeEstimate(entropyBits);
 
   const passwords: GeneratedPasswordItem[] = [];
   const quantity = input.quantity || 1;
@@ -123,6 +159,8 @@ export function computePasswords(
       password: chars.join(""),
       entropyBits,
       length: input.length,
+      strengthTier,
+      crackTimeEstimate,
     });
   }
 

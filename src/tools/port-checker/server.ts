@@ -42,34 +42,41 @@ const serverModule: ToolServerModule<ValidatedPortCheckerInput, PortCheckerData>
 
     await new Promise<void>((resolve) => {
       const socket = new net.Socket();
+      let settled = false;
+
+      const finish = (resultStatus: PortStatus) => {
+        if (settled) return;
+        settled = true;
+        status = resultStatus;
+        latencyMs = performance.now() - start;
+        socket.removeAllListeners();
+        socket.destroy();
+        resolve();
+      };
+
       socket.setTimeout(3000);
 
       socket.on("connect", () => {
-        status = "open";
-        latencyMs = performance.now() - start;
-        socket.destroy();
-        resolve();
+        finish("open");
       });
 
       socket.on("timeout", () => {
-        status = "filtered";
-        latencyMs = performance.now() - start;
-        socket.destroy();
-        resolve();
+        finish("filtered");
       });
 
       socket.on("error", (err: NodeJS.ErrnoException) => {
         if (err.code === "ECONNREFUSED") {
-          status = "closed";
+          finish("closed");
         } else {
-          status = "filtered";
+          finish("filtered");
         }
-        latencyMs = performance.now() - start;
-        socket.destroy();
-        resolve();
       });
 
-      socket.connect(port, resolvedIp);
+      try {
+        socket.connect(port, resolvedIp);
+      } catch {
+        finish("filtered");
+      }
     });
 
     // 4. Delegate to pure compute function

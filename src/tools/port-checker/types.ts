@@ -7,6 +7,9 @@ export interface AllowedPortDefinition {
   service: string;
   category: "Web" | "Remote Access" | "Mail" | "Database" | "Infrastructure";
   description: string;
+  plainExplanation: string;
+  useCase: string;
+  securityNote?: string;
 }
 
 export interface PortCheckerInput {
@@ -23,7 +26,10 @@ export interface PortCheckerData {
   serviceName: string;
   serviceCategory: string;
   serviceDescription: string;
+  plainExplanation: string;
+  useCase: string;
   status: PortStatus;
+  statusMeaning: string;
   latencyMs: number;
   securityRecommendation: string;
   checkedAt: string;

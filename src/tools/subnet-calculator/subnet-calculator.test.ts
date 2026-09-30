@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeSubnet } from "./compute";
+import { computeSubnet, parseCidrString } from "./compute";
 import { subnetInputSchema } from "./schema";
 
 describe("Subnet Calculator Contract Tests", () => {
@@ -71,5 +71,24 @@ describe("Subnet Calculator Contract Tests", () => {
     expect(res.lastUsableIp).toBe("8.8.8.8");
     expect(res.addressType).toBe("Public");
     expect(res.ipClass).toBe("A");
+  });
+
+  it("handles /0 default route edge case across entire IPv4 space", () => {
+    const res = computeSubnet({ ip: "0.0.0.0", cidr: 0 });
+    expect(res.networkAddress).toBe("0.0.0.0");
+    expect(res.broadcastAddress).toBe("255.255.255.255");
+    expect(res.netmask).toBe("0.0.0.0");
+    expect(res.wildcardMask).toBe("255.255.255.255");
+    expect(res.totalHosts).toBe(4294967296);
+    expect(res.usableHosts).toBe(4294967294);
+    expect(res.firstUsableIp).toBe("0.0.0.1");
+    expect(res.lastUsableIp).toBe("255.255.255.254");
+    expect(res.scopeDescription).toContain("Default Route");
+  });
+
+  it("purely parses CIDR strings with embedded prefixes", () => {
+    expect(parseCidrString("192.168.1.50/26")).toEqual({ ip: "192.168.1.50", cidr: 26 });
+    expect(parseCidrString("10.0.0.1")).toEqual({ ip: "10.0.0.1" });
+    expect(parseCidrString("172.16.0.1/33")).toEqual({ ip: "172.16.0.1" });
   });
 });

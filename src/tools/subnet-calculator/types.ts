@@ -20,6 +20,8 @@ export interface SubnetOutputData {
   usableHosts: number;
   ipClass: "A" | "B" | "C" | "D" | "E";
   addressType: "Public" | "Private (RFC 1918)" | "Loopback" | "Link-Local" | "Carrier-Grade NAT" | "Multicast" | "Reserved";
+  scopeDescription: string;
+  addressTypeExplanation: string;
   binary: {
     ip: string;
     netmask: string;

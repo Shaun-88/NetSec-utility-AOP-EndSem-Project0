@@ -18,6 +18,11 @@ import {
   Tag,
   Calendar,
   Lock,
+  BookOpen,
+  Compass,
+  Search,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 const SAMPLE_TOKENS = [
@@ -42,7 +47,8 @@ export default function JwtDecoderTool() {
   const [token, setToken] = useState(SAMPLE_TOKENS[0].token);
   const [result, setResult] = useState<JwtDecoderOutputData | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const [showGuide, setShowGuide] = useState(false);
+  const [activeGuideTab, setActiveGuideTab] = useState<"what-is-it" | "how-to-use" | "how-to-read">("what-is-it");
+  const [isGuideOpen, setIsGuideOpen] = useState(true);
 
   useEffect(() => {
     const parse = jwtDecoderInputSchema.safeParse({ token });
@@ -83,81 +89,199 @@ export default function JwtDecoderTool() {
         </div>
       </div>
 
-      {/* Prominent Plain-Language Explainer Card */}
-      <div className="border border-[#182234] bg-gradient-to-br from-[#0d131f] via-[#090e18] to-[#0d131f] rounded-2xl p-6 space-y-4">
-        <div className="flex items-start gap-3">
-          <div className="p-2 rounded-lg bg-[#00e575]/10 border border-[#00e575]/30 text-[#00e575] mt-0.5">
-            <HelpCircle className="w-5 h-5" />
-          </div>
-          <div className="space-y-2">
-            <h2 className="text-sm font-bold text-white tracking-tight">
-              What is a JWT &amp; how does it keep you logged in?
-            </h2>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              A <strong className="text-white">JSON Web Token (JWT)</strong> is like a digital ID badge or security wristband. When you log into an application, instead of asking for your password every time you click a link, the server gives your browser a compact, signed token. Your browser presents this token on each request to prove who you are.
-            </p>
-            <div className="flex items-center gap-2 text-xs text-amber-400/90 pt-0.5">
-              <ShieldAlert className="w-4 h-4 flex-shrink-0" />
-              <span>
-                <strong>Security Reminder:</strong> JWTs are <em>encoded</em>, not <em>encrypted</em>! Anyone who sees your token can read the data inside. Websites must never place passwords or payment cards inside a JWT payload.
-              </span>
+      {/* Comprehensive Plain-Language Explainer & Interactive Guide */}
+      <div className="border border-[#182234] bg-gradient-to-br from-[#0d131f] via-[#090e18] to-[#0d131f] rounded-2xl p-6 space-y-5">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-[#00e575]/10 border border-[#00e575]/30 text-[#00e575]">
+              <BookOpen className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-white tracking-tight">
+                Complete JWT Guide &amp; Walkthrough
+              </h2>
+              <p className="text-xs text-slate-400">
+                Learn what a JWT is, how to use this tool, and how to interpret every section of the decoded result.
+              </p>
             </div>
           </div>
-        </div>
 
-        {/* The 3 Segments Breakdown */}
-        <div className="border-t border-[#182234] pt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div className="p-3.5 rounded-xl bg-[#080b11] border border-[#f43f5e]/30 space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-[#f43f5e]">1. Header (The Envelope)</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#f43f5e]/10 text-[#f43f5e] font-semibold">Red</span>
-            </div>
-            <p className="text-[11px] text-slate-400 leading-relaxed">
-              Specifies the cryptographic algorithm (e.g. HS256, RS256) used to sign the badge and the token type.
-            </p>
-          </div>
-
-          <div className="p-3.5 rounded-xl bg-[#080b11] border border-[#a855f7]/30 space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-[#a855f7]">2. Payload (The ID Badge)</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#a855f7]/10 text-[#a855f7] font-semibold">Purple</span>
-            </div>
-            <p className="text-[11px] text-slate-400 leading-relaxed">
-              Contains the user data (&quot;claims&quot;): your user ID (<code className="text-slate-300">sub</code>), your name, your permissions (<code className="text-slate-300">role</code>), and expiration (<code className="text-slate-300">exp</code>).
-            </p>
-          </div>
-
-          <div className="p-3.5 rounded-xl bg-[#080b11] border border-[#38bdf8]/30 space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-[#38bdf8]">3. Signature (The Wax Seal)</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#38bdf8]/10 text-[#38bdf8] font-semibold">Blue</span>
-            </div>
-            <p className="text-[11px] text-slate-400 leading-relaxed">
-              A cryptographic seal created by the server. If an attacker modifies even one character in the payload, the seal breaks and access is denied.
-            </p>
-          </div>
-        </div>
-
-        {/* Collapsible Details */}
-        <div className="border-t border-[#182234] pt-2">
           <button
             type="button"
-            onClick={() => setShowGuide(!showGuide)}
-            className="text-xs text-[#00e575] hover:underline font-semibold"
+            onClick={() => setIsGuideOpen(!isGuideOpen)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#080b11] border border-[#182234] hover:border-slate-700 text-xs text-slate-300 hover:text-white transition-colors"
           >
-            {showGuide ? "Hide Claim Explanations" : "What do claims like 'sub', 'exp', and 'iat' mean? (View glossary)"}
+            <span>{isGuideOpen ? "Collapse Guide" : "Expand Guide"}</span>
+            {isGuideOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
           </button>
-
-          {showGuide && (
-            <div className="mt-3 p-4 rounded-xl bg-[#080b11] border border-[#182234] text-xs text-slate-300 space-y-2">
-              <p><strong className="text-white">sub (Subject):</strong> The unique user ID or account number the token belongs to.</p>
-              <p><strong className="text-white">exp (Expiration Time):</strong> The exact second after which the server will reject this token and require re-logging in.</p>
-              <p><strong className="text-white">iat (Issued At):</strong> The timestamp when this login session was first created.</p>
-              <p><strong className="text-white">iss (Issuer):</strong> The authentication server or identity provider (e.g. Auth0, Google, Okta) that created the token.</p>
-              <p><strong className="text-white">aud (Audience):</strong> Which specific API or backend website is allowed to accept this badge.</p>
-            </div>
-          )}
         </div>
+
+        {isGuideOpen && (
+          <div className="space-y-4 pt-1">
+            {/* Guide Tabs */}
+            <div className="flex items-center gap-2 border-b border-[#182234] pb-3 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setActiveGuideTab("what-is-it")}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                  activeGuideTab === "what-is-it"
+                    ? "bg-[#00e575] text-[#080b11] shadow-glow"
+                    : "bg-[#080b11] text-slate-400 hover:text-white border border-[#182234]"
+                }`}
+              >
+                <HelpCircle className="w-3.5 h-3.5" />
+                <span>1. What Exactly is a JWT?</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveGuideTab("how-to-use")}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                  activeGuideTab === "how-to-use"
+                    ? "bg-[#00e575] text-[#080b11] shadow-glow"
+                    : "bg-[#080b11] text-slate-400 hover:text-white border border-[#182234]"
+                }`}
+              >
+                <Compass className="w-3.5 h-3.5" />
+                <span>2. What Do I Do With This Tool?</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveGuideTab("how-to-read")}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                  activeGuideTab === "how-to-read"
+                    ? "bg-[#00e575] text-[#080b11] shadow-glow"
+                    : "bg-[#080b11] text-slate-400 hover:text-white border border-[#182234]"
+                }`}
+              >
+                <Search className="w-3.5 h-3.5" />
+                <span>3. How to Understand the Results</span>
+              </button>
+            </div>
+
+            {/* Tab 1 Content: What Exactly is a JWT? */}
+            {activeGuideTab === "what-is-it" && (
+              <div className="space-y-4 text-xs text-slate-300 leading-relaxed">
+                <div className="p-4 rounded-xl bg-[#080b11] border border-[#182234] space-y-2">
+                  <p>
+                    A <strong className="text-white">JSON Web Token (JWT)</strong> is like a <strong className="text-[#00e575]">digital security badge or concert wristband</strong> for websites and mobile applications. In older systems, the server had to store your session in a central database and query it every time you clicked a button. With JWTs, after you log in, the server mints a signed badge for your browser. On every request, your browser presents this badge. Because the badge has a cryptographic seal, any server can verify who you are without looking at a database!
+                  </p>
+                  <div className="flex items-center gap-2 text-amber-400 font-semibold pt-1">
+                    <ShieldAlert className="w-4 h-4 flex-shrink-0" />
+                    <span>
+                      Critical Rule: Encoding is NOT encryption. Anyone who sees a token can decode it. Never store passwords, PINs, or credit cards in a JWT!
+                    </span>
+                  </div>
+                </div>
+
+                {/* The 3 Segments */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="p-3.5 rounded-xl bg-[#080b11] border border-[#f43f5e]/30 space-y-1.5">
+                    <span className="text-xs font-bold text-[#f43f5e] block">1. Header (The Envelope)</span>
+                    <p className="text-[11px] text-slate-400">
+                      Tells the server which cryptographic algorithm was used to sign the badge (e.g. HS256, RS256) and the token format.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-[#080b11] border border-[#a855f7]/30 space-y-1.5">
+                    <span className="text-xs font-bold text-[#a855f7] block">2. Payload (The ID Badge)</span>
+                    <p className="text-[11px] text-slate-400">
+                      Contains the identity data and claims: your user ID (<span className="text-slate-300">sub</span>), your name, your permissions (<span className="text-slate-300">role</span>), and expiration (<span className="text-slate-300">exp</span>).
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-[#080b11] border border-[#38bdf8]/30 space-y-1.5">
+                    <span className="text-xs font-bold text-[#38bdf8] block">3. Signature (The Wax Seal)</span>
+                    <p className="text-[11px] text-slate-400">
+                      A cryptographic seal created with the server&apos;s private key. If an attacker modifies even a single character in the payload, the seal breaks and access is denied.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Tab 2 Content: What Do I Do With This Tool? */}
+            {activeGuideTab === "how-to-use" && (
+              <div className="space-y-3 text-xs text-slate-300 leading-relaxed">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="p-4 rounded-xl bg-[#080b11] border border-[#182234] space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-full bg-[#00e575] text-[#080b11] font-bold text-[11px] flex items-center justify-center">1</span>
+                      <strong className="text-white">Find Your Token</strong>
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      In Chrome/Firefox, press <strong className="text-slate-300">F12</strong> &rarr; <strong className="text-slate-300">Network</strong> tab &rarr; click an API request &rarr; copy the <strong className="text-slate-300">Authorization: Bearer &lt;token&gt;</strong> header. Or check Application &rarr; LocalStorage.
+                    </p>
+                    <p className="text-[11px] text-[#00e575]">
+                      Tip: You can also click the quick presets above to test instantly!
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-[#080b11] border border-[#182234] space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-full bg-[#00e575] text-[#080b11] font-bold text-[11px] flex items-center justify-center">2</span>
+                      <strong className="text-white">Paste Into Decoder</strong>
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      Paste the token into the box below. You don&apos;t have to manually remove &quot;Bearer&quot; or quotes — the Armoury automatically cleans and formats it for you.
+                    </p>
+                    <p className="text-[11px] text-sky-400">
+                      Privacy: 100% client-side decoding in your browser. Nothing is sent to our servers.
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-[#080b11] border border-[#182234] space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-full bg-[#00e575] text-[#080b11] font-bold text-[11px] flex items-center justify-center">3</span>
+                      <strong className="text-white">Diagnose &amp; Inspect</strong>
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      Use the results to diagnose <strong className="text-slate-300">401 Unauthorized</strong> or <strong className="text-slate-300">403 Forbidden</strong> bugs, check session expiration times, or verify user roles and tenant scopes.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Tab 3 Content: How to Understand the Results */}
+            {activeGuideTab === "how-to-read" && (
+              <div className="space-y-3 text-xs text-slate-300 leading-relaxed">
+                <div className="p-4 rounded-xl bg-[#080b11] border border-[#182234] space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <span className="text-[#00e575] font-bold block uppercase tracking-wider text-[11px]">
+                        Understanding the Status Banner
+                      </span>
+                      <ul className="space-y-1.5 text-[11px] text-slate-400">
+                        <li>
+                          <strong className="text-[#00e575]">Valid Active Token:</strong> The token&apos;s expiration date (<span className="text-slate-300">exp</span>) is in the future. The countdown tells you how much session time remains.
+                        </li>
+                        <li>
+                          <strong className="text-[#ef4444]">Token Expired:</strong> The token&apos;s validity window has passed. If your requests fail with 401 errors, an expired token is the primary culprit.
+                        </li>
+                      </ul>
+                    </div>
+
+                    <div className="space-y-2">
+                      <span className="text-[#38bdf8] font-bold block uppercase tracking-wider text-[11px]">
+                        Understanding Key Claims (RFC 7519)
+                      </span>
+                      <ul className="space-y-1 text-[11px] text-slate-400">
+                        <li><strong className="text-white">sub (Subject):</strong> The unique User ID or account key.</li>
+                        <li><strong className="text-white">exp (Expiration):</strong> Timestamp when the token expires.</li>
+                        <li><strong className="text-white">iat (Issued At):</strong> Timestamp when the user logged in.</li>
+                        <li><strong className="text-white">iss (Issuer):</strong> The auth server (Auth0, Google, Okta, etc.).</li>
+                        <li><strong className="text-white">aud (Audience):</strong> Which API service is allowed to consume this token.</li>
+                        <li><strong className="text-white">role / scope:</strong> Permissions granted to this session.</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Input Section */}

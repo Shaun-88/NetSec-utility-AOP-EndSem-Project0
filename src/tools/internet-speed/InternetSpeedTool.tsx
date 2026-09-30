@@ -23,8 +23,8 @@ import {
 } from "lucide-react";
 
 /**
- * Reusable lightweight SVG Throughput Line Graph.
- * Renders an interactive 10-second throughput timeline with smooth curves and area fill.
+ * Reusable lightweight SVG Throughput Line Graph with organized X and Y axes.
+ * Renders an interactive 10-second throughput timeline with clear scale ticks and metrics.
  */
 function ThroughputGraph({
   title,
@@ -43,76 +43,156 @@ function ThroughputGraph({
 }) {
   if (!points || points.length === 0) return null;
 
-  const maxMbps = Math.max(...points.map((p) => p.mbps), 10);
-  const minMbps = Math.min(...points.map((p) => p.mbps), 0);
-  const chartHeight = 110;
-  const chartWidth = 360;
-  const paddingX = 25;
-  const paddingY = 15;
+  const rawMax = Math.max(...points.map((p) => p.mbps), 10);
+
+  // Clean ceiling calculation for Y-axis scaling
+  const getNiceMax = (val: number): number => {
+    if (val <= 20) return 20;
+    if (val <= 50) return 50;
+    if (val <= 100) return 100;
+    if (val <= 200) return 200;
+    if (val <= 500) return 500;
+    return Math.ceil(val / 200) * 200;
+  };
+
+  const maxY = getNiceMax(rawMax);
+  const chartHeight = 160;
+  const chartWidth = 440;
+  const paddingLeft = 56;
+  const paddingRight = 20;
+  const paddingTop = 24;
+  const paddingBottom = 34;
+
+  const plotWidth = chartWidth - paddingLeft - paddingRight;
+  const plotHeight = chartHeight - paddingTop - paddingBottom;
 
   const getY = (val: number) => {
-    const range = maxMbps - minMbps || 1;
-    const ratio = (val - minMbps) / range;
-    return chartHeight - paddingY - ratio * (chartHeight - paddingY * 2);
+    const ratio = Math.min(Math.max(val / maxY, 0), 1);
+    return paddingTop + (1 - ratio) * plotHeight;
   };
 
-  const getX = (index: number) => {
-    const step = (chartWidth - paddingX * 2) / (points.length - 1 || 1);
-    return paddingX + index * step;
+  const getX = (second: number) => {
+    const ratio = Math.min(Math.max(second / 10, 0), 1);
+    return paddingLeft + ratio * plotWidth;
   };
 
-  const pathPoints = points.map((p, idx) => `${getX(idx)},${getY(p.mbps)}`).join(" ");
-  const areaPath = `${pathPoints} ${chartWidth - paddingX},${chartHeight - paddingY} ${paddingX},${chartHeight - paddingY}`;
+  const pathPoints = points.map((p) => `${getX(p.second)},${getY(p.mbps)}`).join(" ");
+  const firstPointX = points.length > 0 ? getX(points[0].second) : paddingLeft;
+  const lastPointX = points.length > 0 ? getX(points[points.length - 1].second) : paddingLeft;
+  const areaPath = `${paddingLeft},${chartHeight - paddingBottom} ${firstPointX},${getY(points[0].mbps)} ${pathPoints} ${lastPointX},${chartHeight - paddingBottom}`;
+
+  // Y-axis grid increments (5 levels: 100%, 75%, 50%, 25%, 0%)
+  const yTicks = [1.0, 0.75, 0.5, 0.25, 0].map((ratio) => ({
+    value: maxY * ratio,
+    y: paddingTop + (1 - ratio) * plotHeight,
+  }));
+
+  // X-axis time increments (0s, 2s, 4s, 6s, 8s, 10s)
+  const xTicks = [0, 2, 4, 6, 8, 10].map((sec) => ({
+    sec,
+    x: paddingLeft + (sec / 10) * plotWidth,
+  }));
+
+  const avgY = getY(averageMbps);
 
   return (
     <div className="p-5 rounded-2xl bg-[#0d131f] border border-[#182234] space-y-3">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
-          {title} (10s Timeline)
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+          <Activity className="w-3.5 h-3.5 text-[#00e575]" />
+          {title} (10-Second Telemetry)
         </span>
-        <span className="text-xs font-bold text-white">
-          Avg: {formatSpeed(averageMbps, unit)} {unit}
+        <span className="text-xs font-bold text-white px-2.5 py-0.5 rounded-full bg-[#080b11] border border-[#182234]">
+          Avg: <span style={{ color: strokeColor }}>{formatSpeed(averageMbps, unit)} {unit}</span>
         </span>
       </div>
 
       <div className="w-full overflow-hidden">
         <svg
           viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-          className="w-full h-28 overflow-visible"
+          className="w-full h-44 overflow-visible"
         >
           <defs>
             <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={strokeColor} stopOpacity="0.35" />
+              <stop offset="0%" stopColor={strokeColor} stopOpacity="0.30" />
               <stop offset="100%" stopColor={strokeColor} stopOpacity="0.0" />
             </linearGradient>
           </defs>
 
-          {/* Horizontal grid lines */}
+          {/* Y-Axis Unit Label */}
+          <text
+            x={paddingLeft - 48}
+            y={paddingTop - 10}
+            fill="#94a3b8"
+            fontSize="8.5"
+            fontWeight="600"
+            className="font-sans uppercase tracking-wider"
+          >
+            {unit}
+          </text>
+
+          {/* Horizontal Gridlines & Y-Axis Value Labels */}
+          {yTicks.map((tick, idx) => (
+            <g key={idx}>
+              <line
+                x1={paddingLeft}
+                y1={tick.y}
+                x2={chartWidth - paddingRight}
+                y2={tick.y}
+                stroke="#182234"
+                strokeDasharray={idx === yTicks.length - 1 ? "none" : "3 3"}
+                strokeWidth={idx === yTicks.length - 1 ? "1.5" : "1"}
+              />
+              <text
+                x={paddingLeft - 8}
+                y={tick.y + 3}
+                fill="#64748b"
+                fontSize="8.5"
+                textAnchor="end"
+                className="font-sans font-medium"
+              >
+                {formatSpeed(tick.value, unit)}
+              </text>
+            </g>
+          ))}
+
+          {/* X-Axis Vertical Baseline */}
           <line
-            x1={paddingX}
-            y1={paddingY}
-            x2={chartWidth - paddingX}
-            y2={paddingY}
+            x1={paddingLeft}
+            y1={paddingTop}
+            x2={paddingLeft}
+            y2={chartHeight - paddingBottom}
             stroke="#182234"
-            strokeDasharray="3 3"
-          />
-          <line
-            x1={paddingX}
-            y1={chartHeight / 2}
-            x2={chartWidth - paddingX}
-            y2={chartHeight / 2}
-            stroke="#182234"
-            strokeDasharray="3 3"
-          />
-          <line
-            x1={paddingX}
-            y1={chartHeight - paddingY}
-            x2={chartWidth - paddingX}
-            y2={chartHeight - paddingY}
-            stroke="#182234"
+            strokeWidth="1.5"
           />
 
-          {/* Area under curve */}
+          {/* Average speed reference dashed line */}
+          {averageMbps > 0 && avgY >= paddingTop && avgY <= chartHeight - paddingBottom && (
+            <g>
+              <line
+                x1={paddingLeft}
+                y1={avgY}
+                x2={chartWidth - paddingRight}
+                y2={avgY}
+                stroke="#f59e0b"
+                strokeDasharray="4 4"
+                strokeWidth="1.2"
+                strokeOpacity="0.8"
+              />
+              <text
+                x={chartWidth - paddingRight - 4}
+                y={avgY - 4}
+                fill="#f59e0b"
+                fontSize="8"
+                textAnchor="end"
+                className="font-sans font-semibold"
+              >
+                Average Baseline
+              </text>
+            </g>
+          )}
+
+          {/* Area fill under throughput curve */}
           <polygon points={areaPath} fill={`url(#${gradientId})`} />
 
           {/* Throughput Polyline */}
@@ -129,7 +209,7 @@ function ThroughputGraph({
           {points.map((p, idx) => (
             <circle
               key={idx}
-              cx={getX(idx)}
+              cx={getX(p.second)}
               cy={getY(p.mbps)}
               r={idx === points.length - 1 ? 4 : 2.5}
               fill={strokeColor}
@@ -138,25 +218,41 @@ function ThroughputGraph({
             />
           ))}
 
-          {/* Max/Min labels */}
+          {/* X-Axis Ticks & Time Labels */}
+          {xTicks.map((tick) => (
+            <g key={tick.sec}>
+              <line
+                x1={tick.x}
+                y1={chartHeight - paddingBottom}
+                x2={tick.x}
+                y2={chartHeight - paddingBottom + 4}
+                stroke="#334155"
+                strokeWidth="1"
+              />
+              <text
+                x={tick.sec === 0 ? tick.x + 4 : tick.sec === 10 ? tick.x - 4 : tick.x}
+                y={chartHeight - paddingBottom + 16}
+                fill="#64748b"
+                fontSize="9"
+                textAnchor="middle"
+                className="font-sans font-medium"
+              >
+                {tick.sec}s
+              </text>
+            </g>
+          ))}
+
+          {/* X-Axis Title */}
           <text
-            x={paddingX}
-            y={paddingY - 4}
-            fill="#64748b"
-            fontSize="9"
-            className="font-sans"
+            x={paddingLeft + plotWidth / 2}
+            y={chartHeight - 4}
+            fill="#94a3b8"
+            fontSize="8.5"
+            fontWeight="600"
+            textAnchor="middle"
+            className="font-sans uppercase tracking-wider"
           >
-            {formatSpeed(maxMbps, unit)} {unit}
-          </text>
-          <text
-            x={chartWidth - paddingX}
-            y={chartHeight - paddingY + 11}
-            fill="#64748b"
-            fontSize="9"
-            textAnchor="end"
-            className="font-sans"
-          >
-            10s Duration
+            Elapsed Sampling Time (Seconds)
           </text>
         </svg>
       </div>
@@ -314,8 +410,9 @@ export default function InternetSpeedTool() {
     ? speedData.downloadMbps
     : 0;
 
-  // Logarithmic or proportional angle up to 1000 Mbps
-  const needleAngle = Math.min(Math.max((currentSpeedValue / 500) * 110, 0), 110) * 2 - 110;
+  // Symmetrical 220-degree gauge sweep (-110 deg at 0 Mbps, +110 deg at 500+ Mbps)
+  const gaugeProgress = Math.min(Math.max(currentSpeedValue / 500, 0), 1);
+  const needleAngle = -110 + gaugeProgress * 220;
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -390,71 +487,80 @@ export default function InternetSpeedTool() {
           )}
         </div>
 
-        {/* Speedometer Radial Gauge Animation */}
-        <div className="relative w-72 h-64 flex flex-col items-center justify-center">
-          <svg viewBox="0 0 240 180" className="w-72 h-52 overflow-visible">
-            {/* Background Arc Track */}
-            <path
-              d="M 30 150 A 90 90 0 1 1 210 150"
-              fill="none"
-              stroke="#182234"
-              strokeWidth="12"
-              strokeLinecap="round"
-            />
-
-            {/* Glowing Active Speed Arc */}
-            <path
-              d="M 30 150 A 90 90 0 1 1 210 150"
-              fill="none"
-              stroke={stage === "upload" ? "#38bdf8" : "#00e575"}
-              strokeWidth="12"
-              strokeDasharray="424"
-              strokeDashoffset={424 - (Math.min(currentSpeedValue / 500, 1) * 424)}
-              strokeLinecap="round"
-              className="transition-all duration-300 ease-out"
-              filter="drop-shadow(0 0 8px rgba(0, 229, 117, 0.4))"
-            />
-
-            {/* Approximate Tick Marks & Labels */}
-            <text x="32" y="166" fill="#64748b" fontSize="10" textAnchor="middle" className="font-sans">0</text>
-            <text x="52" y="90" fill="#64748b" fontSize="9" textAnchor="middle" className="font-sans">50</text>
-            <text x="120" y="48" fill="#64748b" fontSize="9" textAnchor="middle" className="font-sans">250</text>
-            <text x="188" y="90" fill="#64748b" fontSize="9" textAnchor="middle" className="font-sans">500</text>
-            <text x="208" y="166" fill="#64748b" fontSize="10" textAnchor="middle" className="font-sans">1000+</text>
-
-            {/* Speedometer Needle Indicator */}
-            <g transform={`rotate(${needleAngle}, 120, 150)`} className="transition-transform duration-300 ease-out">
-              <line
-                x1="120"
-                y1="150"
-                x2="120"
-                y2="64"
-                stroke={stage === "upload" ? "#38bdf8" : "#00e575"}
-                strokeWidth="3.5"
+        {/* Speedometer Radial Gauge Animation & Spaced Readout */}
+        <div className="flex flex-col items-center justify-center">
+          <div className="relative w-80 h-48 flex items-center justify-center">
+            <svg viewBox="0 0 280 185" className="w-80 h-48 overflow-visible">
+              {/* Background Arc Track (-110° to +110°, radius 100, center 140, 135) */}
+              <path
+                d="M 46.03 169.20 A 100 100 0 1 1 233.97 169.20"
+                fill="none"
+                stroke="#182234"
+                strokeWidth="12"
                 strokeLinecap="round"
               />
-              <circle cx="120" cy="150" r="7" fill="#080b11" stroke="#00e575" strokeWidth="3" />
-            </g>
-          </svg>
 
-          {/* Exact Numeric Readout Centered Inside Gauge */}
-          <div className="absolute bottom-4 flex flex-col items-center justify-center space-y-1">
-            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">
-              {stage === "idle" && "READY TO TEST"}
-              {stage === "ping" && "CALIBRATING PING..."}
-              {stage === "download" && `MEASURING DOWNLOAD (${remainingSeconds}s)`}
-              {stage === "upload" && `MEASURING UPLOAD (${remainingSeconds}s)`}
-              {stage === "complete" && "TEST COMPLETE"}
-            </span>
+              {/* Glowing Active Speed Arc */}
+              <path
+                d="M 46.03 169.20 A 100 100 0 1 1 233.97 169.20"
+                fill="none"
+                stroke={stage === "upload" ? "#38bdf8" : "#00e575"}
+                strokeWidth="12"
+                strokeDasharray="384"
+                strokeDashoffset={384 * (1 - gaugeProgress)}
+                strokeLinecap="round"
+                className="transition-all duration-300 ease-out"
+                filter={`drop-shadow(0 0 8px ${stage === "upload" ? "rgba(56, 189, 248, 0.4)" : "rgba(0, 229, 117, 0.4)"})`}
+              />
 
-            <div className="text-4xl sm:text-5xl font-black text-white tracking-tight">
-              {formatSpeed(currentSpeedValue, unit)}
+              {/* Approximate Tick Marks & Labels */}
+              <text x="36" y="182" fill="#64748b" fontSize="10" textAnchor="middle" className="font-sans">0</text>
+              <text x="52" y="86" fill="#64748b" fontSize="9" textAnchor="middle" className="font-sans">50</text>
+              <text x="140" y="24" fill="#64748b" fontSize="9" textAnchor="middle" className="font-sans">250</text>
+              <text x="228" y="86" fill="#64748b" fontSize="9" textAnchor="middle" className="font-sans">500</text>
+              <text x="244" y="182" fill="#64748b" fontSize="10" textAnchor="middle" className="font-sans">1000+</text>
+
+              {/* Speedometer Needle Indicator */}
+              <g transform={`rotate(${needleAngle}, 140, 135)`} className="transition-transform duration-300 ease-out">
+                <line
+                  x1="140"
+                  y1="135"
+                  x2="140"
+                  y2="46"
+                  stroke={stage === "upload" ? "#38bdf8" : "#00e575"}
+                  strokeWidth="3.5"
+                  strokeLinecap="round"
+                />
+                <circle cx="140" cy="135" r="9" fill="#080b11" stroke={stage === "upload" ? "#38bdf8" : "#00e575"} strokeWidth="2.5" />
+                <circle cx="140" cy="135" r="3.5" fill={stage === "upload" ? "#38bdf8" : "#00e575"} />
+              </g>
+            </svg>
+          </div>
+
+          {/* Spaced-Out Digital Speed Readout Box (Zero Overlap with Needle) */}
+          <div className="mt-4 flex flex-col items-center justify-center space-y-1.5 p-4 rounded-2xl bg-[#080b11] border border-[#182234] min-w-[280px] shadow-sm">
+            <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+              <Activity className="w-3.5 h-3.5 text-[#00e575]" />
+              <span>
+                {stage === "idle" && "READY TO TEST"}
+                {stage === "ping" && "CALIBRATING PING..."}
+                {stage === "download" && `MEASURING DOWNLOAD (${remainingSeconds}s)`}
+                {stage === "upload" && `MEASURING UPLOAD (${remainingSeconds}s)`}
+                {stage === "complete" && "TEST COMPLETE"}
+              </span>
             </div>
 
-            <div className="flex items-center gap-1.5">
-              <span className={`text-xs font-bold tracking-wider ${stage === "upload" ? "text-[#38bdf8]" : "text-[#00e575]"}`}>
-                {unit} {stage === "upload" ? "UPLOAD" : "DOWNLOAD"}
+            <div className="flex items-baseline justify-center gap-2">
+              <span className="text-4xl sm:text-5xl font-black text-white tracking-tight leading-none">
+                {formatSpeed(currentSpeedValue, unit)}
               </span>
+              <span className={`text-sm font-bold tracking-wider ${stage === "upload" ? "text-[#38bdf8]" : "text-[#00e575]"}`}>
+                {unit}
+              </span>
+            </div>
+
+            <div className="text-[11px] text-slate-400 font-medium">
+              {stage === "upload" ? "Real-Time Outbound Throughput" : "Real-Time Inbound Throughput"}
             </div>
           </div>
         </div>

@@ -12,7 +12,18 @@ import {
   Check,
   Compass,
   AlertTriangle,
+  ExternalLink,
+  ShieldCheck,
+  ShieldAlert,
+  Info,
 } from "lucide-react";
+
+const EXAMPLE_TARGETS = [
+  { label: "Cloudflare DNS", value: "1.1.1.1" },
+  { label: "Google DNS", value: "8.8.8.8" },
+  { label: "GitHub", value: "github.com" },
+  { label: "Quad9 DNS", value: "9.9.9.9" },
+];
 
 export default function IpLookupTool() {
   const [target, setTarget] = useState("");
@@ -54,17 +65,20 @@ export default function IpLookupTool() {
   };
 
   const ipData = result?.data;
+  const lat = ipData?.location?.coordinates?.latitude ?? 0;
+  const lon = ipData?.location?.coordinates?.longitude ?? 0;
+  const hasCoordinates = lat !== 0 || lon !== 0;
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="border border-[#182234] bg-[#0d131f] rounded-2xl p-6">
-        <div className="flex items-center gap-3">
-          <div className="p-3 rounded-xl bg-[#080b11] border border-[#00e575]/40 text-[#00e575] shadow-glow">
+      {/* Plain-Language Explainer (Non-IT Friendly) */}
+      <div className="border border-[#182234] bg-[#0d131f] rounded-2xl p-6 relative overflow-hidden">
+        <div className="flex items-start gap-4">
+          <div className="p-3 rounded-xl bg-[#080b11] border border-[#00e575]/40 text-[#00e575] shadow-glow flex-shrink-0">
             <Globe className="w-6 h-6" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2.5 flex-wrap">
               <h1 className="text-xl font-bold text-white tracking-tight">
                 IP Lookup &amp; Geolocation
               </h1>
@@ -72,9 +86,17 @@ export default function IpLookupTool() {
                 Network Intelligence
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-1">
-              Resolve public IP geolocation, Autonomous System Numbers (ASN), ISP infrastructure, and proxy indicators.
+
+            <p className="text-xs text-slate-300 leading-relaxed font-sans">
+              <strong>What is an IP address?</strong> Your public IP address functions like your device&apos;s digital <em>&quot;return address&quot;</em> on the internet. Every website or online service you connect to reads this address so it knows where to return data. An IP lookup queries official routing registries to reveal general information tied to that address — including approximate geographical location, internet service provider (ISP), Autonomous System Number (ASN), and proxy/VPN indicators.
             </p>
+
+            <div className="flex items-center gap-2 pt-1 text-[11px] text-amber-400/90 font-sans">
+              <Info className="w-3.5 h-3.5 flex-shrink-0" />
+              <span>
+                <strong>Accuracy Note:</strong> Geolocation shows the approximate city or regional network hub assigned by the ISP, not an exact physical house or street address.
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -97,8 +119,8 @@ export default function IpLookupTool() {
                 type="text"
                 value={target}
                 onChange={(e) => setTarget(e.target.value)}
-                placeholder="e.g. 8.8.8.8 or github.com (leave blank for your IP)"
-                className="flex-1 bg-[#080b11] border border-[#182234] rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#00e575]/50 focus:ring-1 focus:ring-[#00e575]/50"
+                placeholder="e.g. 8.8.8.8, 1.1.1.1, or github.com (leave blank for your IP)"
+                className="flex-1 bg-[#080b11] border border-[#182234] rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#00e575]/50 focus:ring-1 focus:ring-[#00e575]/50 font-sans"
               />
               <button
                 type="submit"
@@ -111,14 +133,32 @@ export default function IpLookupTool() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 pt-1">
+          {/* Quick Preset Buttons & Self-Detect */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[11px] text-slate-500 font-medium">Quick Examples:</span>
+              {EXAMPLE_TARGETS.map((ex) => (
+                <button
+                  key={ex.value}
+                  type="button"
+                  onClick={() => {
+                    setTarget(ex.value);
+                    handleSubmit(ex.value);
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-[#080b11] hover:bg-[#121927] border border-[#182234] text-[11px] text-slate-300 hover:text-white transition-colors font-sans"
+                >
+                  {ex.label}
+                </button>
+              ))}
+            </div>
+
             <button
               type="button"
               onClick={() => {
                 setTarget("");
                 handleSubmit("");
               }}
-              className="text-xs text-slate-400 hover:text-[#00e575] transition-colors flex items-center gap-1.5"
+              className="text-xs text-slate-400 hover:text-[#00e575] transition-colors flex items-center gap-1.5 font-sans"
             >
               <Compass className="w-3.5 h-3.5" />
               <span>Detect My Public IP Address</span>
@@ -160,7 +200,7 @@ export default function IpLookupTool() {
                     )}
                   </button>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-slate-400 mt-1">
+                <div className="flex items-center gap-2 text-xs text-slate-400 mt-1 font-sans">
                   <span>{ipData.ipVersion}</span>
                   <span>•</span>
                   <span>{ipData.network.isp}</span>
@@ -190,7 +230,7 @@ export default function IpLookupTool() {
                 <span>Geographic Location</span>
               </div>
 
-              <div className="divide-y divide-[#182234] text-xs">
+              <div className="divide-y divide-[#182234] text-xs font-sans">
                 <div className="py-2.5 flex justify-between">
                   <span className="text-slate-400">City</span>
                   <span className="text-white font-medium">{ipData.location.city}</span>
@@ -213,7 +253,7 @@ export default function IpLookupTool() {
                   <span className="text-slate-400">Postal Code</span>
                   <span className="text-white font-medium">{ipData.location.postal}</span>
                 </div>
-                <div className="py-2.5 flex justify-between">
+                <div className="py-2.5 flex justify-between items-center">
                   <span className="text-slate-400">Coordinates</span>
                   <span className="text-slate-300">
                     {ipData.location.coordinates.latitude.toFixed(4)},{" "}
@@ -223,14 +263,14 @@ export default function IpLookupTool() {
               </div>
             </div>
 
-            {/* Network & ASN Details */}
+            {/* Network & Security Details */}
             <div className="border border-[#182234] bg-[#0d131f] rounded-2xl p-6 space-y-4">
               <div className="flex items-center gap-2 text-xs font-bold text-white uppercase tracking-wider">
                 <Server className="w-4 h-4 text-[#00e575]" />
                 <span>Network &amp; Organization</span>
               </div>
 
-              <div className="divide-y divide-[#182234] text-xs">
+              <div className="divide-y divide-[#182234] text-xs font-sans">
                 <div className="py-2.5 flex justify-between">
                   <span className="text-slate-400">Autonomous System</span>
                   <span className="text-white font-medium">{ipData.network.asn}</span>
@@ -258,22 +298,91 @@ export default function IpLookupTool() {
                 <div className="py-2.5 flex justify-between items-center">
                   <span className="text-slate-400">Threat / Proxy Status</span>
                   <span
-                    className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
+                    className={`px-2 py-0.5 rounded text-[10px] font-semibold flex items-center gap-1 ${
                       ipData.security.isVpnOrProxy || ipData.security.isTor
                         ? "bg-[#ef4444]/20 text-[#ef4444] border border-[#ef4444]/30"
                         : "bg-[#00e575]/10 text-[#00e575] border border-[#00e575]/30"
                     }`}
                   >
-                    {ipData.security.isTor
-                      ? "Tor Node"
-                      : ipData.security.isVpnOrProxy
-                      ? "VPN / Proxy Detected"
-                      : ipData.security.isHosting
-                      ? "Datacenter / Hosting"
-                      : "Clean / Residential"}
+                    {ipData.security.isTor ? (
+                      <>
+                        <ShieldAlert className="w-3 h-3" />
+                        <span>Tor Node</span>
+                      </>
+                    ) : ipData.security.isVpnOrProxy ? (
+                      <>
+                        <ShieldAlert className="w-3 h-3" />
+                        <span>VPN / Proxy Detected</span>
+                      </>
+                    ) : ipData.security.isHosting ? (
+                      <>
+                        <Server className="w-3 h-3" />
+                        <span>Datacenter / Hosting</span>
+                      </>
+                    ) : (
+                      <>
+                        <ShieldCheck className="w-3 h-3" />
+                        <span>Clean / Residential</span>
+                      </>
+                    )}
                   </span>
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Interactive OpenStreetMap Embed */}
+          <div className="border border-[#182234] bg-[#0d131f] rounded-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-bold text-white uppercase tracking-wider">
+                <MapPin className="w-4 h-4 text-[#00e575]" />
+                <span>Approximate Geolocation Map (OpenStreetMap)</span>
+              </div>
+
+              {hasCoordinates && (
+                <a
+                  href={`https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=12/${lat}/${lon}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-[#00e575] hover:underline flex items-center gap-1 font-sans"
+                >
+                  <span>View Larger Map</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              )}
+            </div>
+
+            {hasCoordinates && ipData.location.mapEmbedUrl ? (
+              <div className="w-full h-80 rounded-xl overflow-hidden border border-[#182234] relative bg-[#080b11]">
+                <iframe
+                  title="OpenStreetMap Location"
+                  width="100%"
+                  height="100%"
+                  frameBorder="0"
+                  scrolling="no"
+                  marginHeight={0}
+                  marginWidth={0}
+                  src={ipData.location.mapEmbedUrl}
+                  className="w-full h-full opacity-90 contrast-110"
+                  loading="lazy"
+                />
+              </div>
+            ) : (
+              <div className="h-44 rounded-xl border border-dashed border-[#182234] flex flex-col items-center justify-center text-center p-6 text-slate-500 space-y-2">
+                <MapPin className="w-6 h-6 text-slate-600" />
+                <span className="text-xs font-sans">
+                  Precise map coordinates unavailable for this regional network IP.
+                </span>
+              </div>
+            )}
+
+            {/* Accuracy Notice */}
+            <div className="p-3.5 rounded-xl bg-[#080b11] border border-[#182234] flex items-start gap-3 text-xs text-slate-400 font-sans">
+              <Info className="w-4 h-4 text-[#00e575] flex-shrink-0 mt-0.5" />
+              <span>
+                {ipData.location.accuracyDisclaimer ||
+                  "Geolocation accuracy is as accurate as the upstream data source provides. It indicates the approximate city/regional routing assigned by the ISP, not the exact physical address of a user."}
+              </span>
             </div>
           </div>
         </div>

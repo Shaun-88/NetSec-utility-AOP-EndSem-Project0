@@ -66,6 +66,8 @@ export interface IpLookupData {
       latitude: number;
       longitude: number;
     };
+    accuracyDisclaimer?: string;
+    mapEmbedUrl?: string;
   };
   network: {
     asn: string;

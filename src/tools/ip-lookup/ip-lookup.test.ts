@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeIpLookupData } from "./compute";
+import { computeIpLookupData, getOsmEmbedUrl } from "./compute";
 import { ipLookupInputSchema } from "./schema";
 import type { RawIpIntelligenceResponse } from "./types";
 
@@ -67,5 +67,15 @@ describe("IP Lookup Contract Tests", () => {
     expect(output.network.isp).toBe("Google LLC");
     expect(output.security.isHosting).toBe(true);
     expect(output.security.isVpnOrProxy).toBe(false);
+    expect(output.location.mapEmbedUrl).toBeDefined();
+    expect(output.location.mapEmbedUrl).toContain("openstreetmap.org/export/embed.html");
+    expect(output.location.accuracyDisclaimer).toContain("upstream data source");
+  });
+
+  it("purely builds valid OpenStreetMap embed URLs with coordinates and bounding boxes", () => {
+    const url = getOsmEmbedUrl(37.386, -122.0838);
+    expect(url).toContain("openstreetmap.org/export/embed.html");
+    expect(url).toContain("marker=37.386%2C-122.0838");
+    expect(url).toContain("bbox=");
   });
 });

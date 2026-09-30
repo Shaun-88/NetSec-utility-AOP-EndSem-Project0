@@ -1,6 +1,17 @@
 import type { RawIpIntelligenceResponse, IpLookupData } from "./types";
 
 /**
+ * Builds an OpenStreetMap embed iframe URL for given coordinates.
+ */
+export function getOsmEmbedUrl(latitude: number, longitude: number, delta = 0.05): string {
+  const minLon = longitude - delta;
+  const minLat = latitude - delta;
+  const maxLon = longitude + delta;
+  const maxLat = latitude + delta;
+  return `https://www.openstreetmap.org/export/embed.html?bbox=${minLon}%2C${minLat}%2C${maxLon}%2C${maxLat}&layer=mapnik&marker=${latitude}%2C${longitude}`;
+}
+
+/**
  * Pure compute function for IP Lookup.
  * INVARIANT: Must be 100% pure with NO side-effects, network, or file I/O.
  */
@@ -10,6 +21,9 @@ export function computeIpLookupData(
   resolvedHostname?: string,
 ): IpLookupData {
   const isIpv6 = (raw.ip || "").includes(":");
+  const latitude = raw.latitude ?? 0;
+  const longitude = raw.longitude ?? 0;
+  const hasCoordinates = latitude !== 0 || longitude !== 0;
 
   return {
     query: query || raw.ip || "Local Public Interface",
@@ -25,9 +39,12 @@ export function computeIpLookupData(
       postal: raw.postal || "N/A",
       flagEmoji: raw.flag?.emoji || "🌐",
       coordinates: {
-        latitude: raw.latitude ?? 0,
-        longitude: raw.longitude ?? 0,
+        latitude,
+        longitude,
       },
+      mapEmbedUrl: hasCoordinates ? getOsmEmbedUrl(latitude, longitude) : undefined,
+      accuracyDisclaimer:
+        "Geolocation data is as accurate as the upstream data source provides. It represents the approximate network routing area assigned by your ISP, not a promise of an exact physical street address.",
     },
     network: {
       asn: raw.connection?.asn ? `AS${raw.connection.asn}` : "N/A",

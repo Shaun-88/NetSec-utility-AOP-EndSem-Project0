@@ -40,9 +40,13 @@ describe("DNS Lookup Contract Tests", () => {
     expect(res.domain).toBe("example.com");
     expect(res.totalRecordsFound).toBe(8);
     expect(res.recordsByType.A?.[0].value).toBe("192.0.2.1");
+    expect(res.recordsByType.A?.[0].typeLabel).toBe("IPv4 Address");
+    expect(res.recordsByType.A?.[0].typeExplanation).toContain("primary internet address");
     expect(res.recordsByType.AAAA?.[0].value).toBe("2001:db8::1");
     expect(res.recordsByType.MX?.[0].priority).toBe(10);
+    expect(res.recordsByType.MX?.[0].typeExplanation).toContain("emails sent to this domain");
     expect(res.recordsByType.TXT?.[0].value).toBe("v=spf1 include:_spf.google.com ~all");
+    expect(res.recordsByType.TXT?.[0].typeExplanation).toContain("ownership & anti-spoofing");
     expect(res.recordsByType.NS?.length).toBe(2);
     expect(res.recordsByType.SOA?.[0].serial).toBe(2026092901);
   });

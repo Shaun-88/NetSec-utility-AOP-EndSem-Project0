@@ -1,4 +1,9 @@
-import type { DnsRecordItem, DnsRecordType, DnsLookupData } from "./types";
+import {
+  type DnsRecordItem,
+  type DnsRecordType,
+  type DnsLookupData,
+  DNS_RECORD_METADATA,
+} from "./types";
 
 export interface RawDnsCollection {
   a?: Array<{ address: string; ttl?: number }>;
@@ -34,6 +39,8 @@ export function computeDnsLookupData(
     const list: DnsRecordItem[] = raw.a.map((rec) => ({
       type: "A",
       value: rec.address,
+      typeLabel: DNS_RECORD_METADATA.A.name,
+      typeExplanation: DNS_RECORD_METADATA.A.shortDesc,
       ttl: rec.ttl,
     }));
     recordsByType["A"] = list;
@@ -45,6 +52,8 @@ export function computeDnsLookupData(
     const list: DnsRecordItem[] = raw.aaaa.map((rec) => ({
       type: "AAAA",
       value: rec.address,
+      typeLabel: DNS_RECORD_METADATA.AAAA.name,
+      typeExplanation: DNS_RECORD_METADATA.AAAA.shortDesc,
       ttl: rec.ttl,
     }));
     recordsByType["AAAA"] = list;
@@ -58,6 +67,8 @@ export function computeDnsLookupData(
       .map((rec) => ({
         type: "MX",
         value: rec.exchange,
+        typeLabel: DNS_RECORD_METADATA.MX.name,
+        typeExplanation: DNS_RECORD_METADATA.MX.shortDesc,
         priority: rec.priority,
         exchange: rec.exchange,
       }));
@@ -70,6 +81,8 @@ export function computeDnsLookupData(
     const list: DnsRecordItem[] = raw.txt.map((chunks) => ({
       type: "TXT",
       value: chunks.join(" "),
+      typeLabel: DNS_RECORD_METADATA.TXT.name,
+      typeExplanation: DNS_RECORD_METADATA.TXT.shortDesc,
     }));
     recordsByType["TXT"] = list;
     allRecords.push(...list);
@@ -80,6 +93,8 @@ export function computeDnsLookupData(
     const list: DnsRecordItem[] = raw.ns.map((ns) => ({
       type: "NS",
       value: ns,
+      typeLabel: DNS_RECORD_METADATA.NS.name,
+      typeExplanation: DNS_RECORD_METADATA.NS.shortDesc,
     }));
     recordsByType["NS"] = list;
     allRecords.push(...list);
@@ -90,6 +105,8 @@ export function computeDnsLookupData(
     const list: DnsRecordItem[] = raw.cname.map((alias) => ({
       type: "CNAME",
       value: alias,
+      typeLabel: DNS_RECORD_METADATA.CNAME.name,
+      typeExplanation: DNS_RECORD_METADATA.CNAME.shortDesc,
     }));
     recordsByType["CNAME"] = list;
     allRecords.push(...list);
@@ -100,6 +117,8 @@ export function computeDnsLookupData(
     const item: DnsRecordItem = {
       type: "SOA",
       value: `${raw.soa.nsname} (admin: ${raw.soa.hostmaster})`,
+      typeLabel: DNS_RECORD_METADATA.SOA.name,
+      typeExplanation: DNS_RECORD_METADATA.SOA.shortDesc,
       hostmaster: raw.soa.hostmaster,
       serial: raw.soa.serial,
       raw: raw.soa,

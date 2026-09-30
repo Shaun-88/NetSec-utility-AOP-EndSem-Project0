@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { computePasswords } from "./compute";
 import { passwordGeneratorInputSchema } from "./schema";
 import type { PasswordGeneratorOutputData } from "./types";
+import { logClientToolRun } from "@/core/history/client-logger";
 import {
   KeyRound,
   RefreshCw,
@@ -57,7 +58,15 @@ export default function PasswordGeneratorTool() {
     } else {
       setError(null);
       try {
-        setResult(computePasswords(parse.data));
+        const out = computePasswords(parse.data);
+        setResult(out);
+        logClientToolRun("password-generator", `Length: ${length}`, {
+          length,
+          quantity,
+          hasSymbols: includeSymbols,
+          hasNumbers: includeNumbers,
+          entropyBits: out.passwords[0]?.entropyBits ?? 0,
+        });
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to generate passwords.");
       }

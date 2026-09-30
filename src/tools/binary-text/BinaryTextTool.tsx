@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { computeBinaryText } from "./compute";
 import { binaryTextInputSchema } from "./schema";
 import type { BinaryTextOutputData, ConversionMode, BinaryDelimiter } from "./types";
+import { logClientToolRunDebounced } from "@/core/history/client-logger";
 import {
   Binary,
   ArrowRightLeft,
@@ -40,7 +41,20 @@ export default function BinaryTextTool() {
   useEffect(() => {
     const parse = binaryTextInputSchema.safeParse({ input, mode, delimiter });
     if (parse.success) {
-      setResult(computeBinaryText(parse.data));
+      const out = computeBinaryText(parse.data);
+      setResult(out);
+      if (input.trim().length > 0) {
+        logClientToolRunDebounced(
+          "binary-text",
+          mode === "text-to-binary" ? "Text to Binary" : "Binary to Text",
+          {
+            mode,
+            delimiter,
+            inputLength: input.length,
+            outputLength: out.output.length,
+          },
+        );
+      }
     }
   }, [input, mode, delimiter]);
 

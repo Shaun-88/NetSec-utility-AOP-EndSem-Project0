@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { computeSubnet, parseCidrString } from "./compute";
 import { subnetInputSchema } from "./schema";
 import type { SubnetOutputData } from "./types";
+import { logClientToolRunDebounced } from "@/core/history/client-logger";
 import {
   Network,
   Binary,
@@ -40,7 +41,9 @@ export default function SubnetCalculatorTool() {
       setResult(null);
     } else {
       setError(null);
-      setResult(computeSubnet(parse.data));
+      const computed = computeSubnet(parse.data);
+      setResult(computed);
+      logClientToolRunDebounced("subnet-calculator", `${ip}/${cidr}`, computed);
     }
   }, [ip, cidr]);
 

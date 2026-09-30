@@ -9,6 +9,8 @@ import {
   Shield,
   Settings,
   User,
+  Sparkles,
+  History,
   ChevronDown,
   ChevronRight,
   Menu,
@@ -193,23 +195,51 @@ export default function Sidebar() {
               </div>
             )}
           </div>
+          {/* Section 3: AI Zone */}
+          <div className="pt-1">
+            <Link
+              href="/ai-zone"
+              onClick={closeMobile}
+              className={`flex items-center justify-between px-3 py-2 rounded-lg font-semibold text-xs transition-colors ${
+                pathname === "/ai-zone"
+                  ? "bg-[#00e575]/10 text-[#00e575] font-semibold border-l-2 border-[#00e575]"
+                  : "text-slate-400 hover:text-white hover:bg-[#121927]"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-amber-400" />
+                <span className="uppercase tracking-wider">AI Zone</span>
+              </div>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-medium">
+                Agent
+              </span>
+            </Link>
+          </div>
+
+          {/* Section 4: History */}
+          <div className="pt-0.5">
+            <Link
+              href="/history"
+              onClick={closeMobile}
+              className={`flex items-center justify-between px-3 py-2 rounded-lg font-semibold text-xs transition-colors ${
+                pathname === "/history"
+                  ? "bg-[#00e575]/10 text-[#00e575] font-semibold border-l-2 border-[#00e575]"
+                  : "text-slate-400 hover:text-white hover:bg-[#121927]"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <History className="w-4 h-4 text-sky-400" />
+                <span className="uppercase tracking-wider">History</span>
+              </div>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20 font-medium">
+                48h
+              </span>
+            </Link>
+          </div>
         </div>
 
         {/* Fixed Bottom Navigation: Settings & Account */}
         <div className="p-3 border-t border-[#182234] bg-[#070a10] space-y-1 flex-shrink-0">
-          <Link
-            href="/account"
-            onClick={closeMobile}
-            className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-              pathname === "/account"
-                ? "bg-[#00e575]/10 text-[#00e575] font-semibold"
-                : "text-slate-400 hover:text-white hover:bg-[#121927]"
-            }`}
-          >
-            <User className="w-4 h-4 text-slate-400" />
-            <span>Account &amp; History</span>
-          </Link>
-
           <Link
             href="/settings"
             onClick={closeMobile}
@@ -221,6 +251,19 @@ export default function Sidebar() {
           >
             <Settings className="w-4 h-4 text-slate-400" />
             <span>Settings</span>
+          </Link>
+
+          <Link
+            href="/account"
+            onClick={closeMobile}
+            className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+              pathname === "/account"
+                ? "bg-[#00e575]/10 text-[#00e575] font-semibold"
+                : "text-slate-400 hover:text-white hover:bg-[#121927]"
+            }`}
+          >
+            <User className="w-4 h-4 text-slate-400" />
+            <span>Account</span>
           </Link>
         </div>
       </aside>

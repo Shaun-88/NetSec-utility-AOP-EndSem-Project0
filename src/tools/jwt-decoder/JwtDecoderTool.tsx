@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { computeJwtDecode } from "./compute";
 import { jwtDecoderInputSchema } from "./schema";
 import type { JwtDecoderOutputData } from "./types";
+import { logClientToolRunDebounced } from "@/core/history/client-logger";
 import {
   Key,
   Clock,
@@ -53,7 +54,18 @@ export default function JwtDecoderTool() {
   useEffect(() => {
     const parse = jwtDecoderInputSchema.safeParse({ token });
     if (parse.success) {
-      setResult(computeJwtDecode(parse.data));
+      const out = computeJwtDecode(parse.data);
+      setResult(out);
+      if (token.trim().length > 10) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const sub = (out.payload as any)?.sub || "JWT Token";
+        logClientToolRunDebounced("jwt-decoder", String(sub), {
+          header: out.header,
+          payload: out.payload,
+          isExpired: out.validation.isExpired,
+          expirationDate: out.validation.expiresAt,
+        });
+      }
     }
   }, [token]);
 

@@ -13,7 +13,7 @@ export default async function AccountPage() {
 
   const profile = await getUserProfile(userId);
   const displayName = profile?.displayName || session?.user?.name || "Agent";
-  const history = await getUserToolHistory(userId, 20);
+  const history = await getUserToolHistory(userId, { limit: 10 });
 
   return (
     <AppShell>
@@ -21,10 +21,10 @@ export default async function AccountPage() {
         {/* Page Title */}
         <div>
           <h1 className="text-2xl font-extrabold text-white tracking-tight">
-            Account &amp; History
+            Account &amp; Agent Profile
           </h1>
           <p className="text-xs text-slate-400 mt-1">
-            Manage your agent profile and review historical diagnostic executions.
+            Manage your agent profile, session credentials, and quick diagnostic activity.
           </p>
         </div>
 
@@ -60,11 +60,20 @@ export default async function AccountPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-bold text-white">
               <Clock className="w-4 h-4 text-[#00e575]" />
-              <span>Tool Execution Log</span>
+              <span>Recent Diagnostic Activity</span>
             </div>
-            <span className="text-xs text-slate-500">
-              {history.length} records recorded
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-slate-500">
+                {history.length} recent records
+              </span>
+              <Link
+                href="/history"
+                className="text-xs text-[#00e575] hover:underline font-semibold flex items-center gap-1"
+              >
+                <span>Full 48h History</span>
+                <ExternalLink className="w-3 h-3" />
+              </Link>
+            </div>
           </div>
 
           {history.length === 0 ? (

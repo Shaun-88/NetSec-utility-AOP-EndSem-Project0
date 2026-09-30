@@ -1,6 +1,7 @@
 import "server-only";
 import { serverHandlers } from "@/registry/tools.server";
 import { saveToolHistory } from "@/db/queries/history";
+import { synthesizeAIContext } from "@/core/history/ai-synthesizer";
 import type { ToolResult } from "@/core/results/types";
 import type { ToolRunContext } from "./types";
 
@@ -116,8 +117,9 @@ export async function executeToolFrontDoor(
     const ctx: ToolRunContext = { userId };
     const result = await executeWithTimeout(handler.run(body, ctx), 8000);
 
-    // 5. On success: persist to user's tool_history
-    await saveToolHistory(userId, toolId, result.data, result.target);
+    // 5. On success: persist to user's tool_history with AI-enriched telemetry
+    const aiContext = synthesizeAIContext(toolId, result.target, result.data);
+    await saveToolHistory(userId, toolId, result.data, result.target, aiContext);
 
     return {
       success: true,

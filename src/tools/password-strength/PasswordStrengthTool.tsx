@@ -5,6 +5,7 @@ import Link from "next/link";
 import { computePasswordStrength } from "./compute";
 import { passwordStrengthInputSchema } from "./schema";
 import type { PasswordStrengthData } from "./types";
+import { logClientToolRunDebounced } from "@/core/history/client-logger";
 import {
   ShieldAlert,
   Eye,
@@ -40,7 +41,17 @@ export default function PasswordStrengthTool() {
   useEffect(() => {
     const parse = passwordStrengthInputSchema.safeParse({ password });
     if (parse.success) {
-      setResult(computePasswordStrength(parse.data));
+      const out = computePasswordStrength(parse.data);
+      setResult(out);
+      if (password.trim().length > 0) {
+        logClientToolRunDebounced("password-strength", "Audited Password", {
+          score: out.score,
+          entropy: out.entropyBits,
+          crackTimeDisplay: out.crackTimes?.offlineFastHash || "Instant",
+          feedback: out.feedback,
+          length: password.length,
+        });
+      }
     }
   }, [password]);
 

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { computeHashes } from "./compute";
 import { hashGeneratorInputSchema } from "./schema";
 import type { HashGeneratorOutputData } from "./types";
+import { logClientToolRunDebounced } from "@/core/history/client-logger";
 import {
   Hash,
   Copy,
@@ -39,7 +40,16 @@ export default function HashGeneratorTool() {
     const parse = hashGeneratorInputSchema.safeParse({ text, hmacKey, uppercase });
     if (parse.success) {
       computeHashes(parse.data).then((res) => {
-        if (active) setResult(res);
+        if (active) {
+          setResult(res);
+          if (text.trim().length > 0) {
+            logClientToolRunDebounced("hash-generator", hmacKey ? "HMAC Digest" : "Hash Digest", {
+              inputLength: text.length,
+              hasHmac: !!hmacKey,
+              algorithms: res.hashes.map((h) => h.algorithm),
+            });
+          }
+        }
       });
     }
     return () => {

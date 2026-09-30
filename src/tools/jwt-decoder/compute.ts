@@ -2,19 +2,36 @@ import type { ValidatedJwtDecoderInput } from "./schema";
 import type { JwtDecoderOutputData, JwtClaimDetail, JwtTokenValidation } from "./types";
 
 const STANDARD_CLAIM_DESCRIPTIONS: Record<string, string> = {
-  iss: "Issuer (iss): The identity authority that created and issued the token.",
-  sub: "Subject (sub): The principal identifier (e.g. user ID or entity).",
-  aud: "Audience (aud): Recipient(s) or resource server the token is intended for.",
-  exp: "Expiration Time (exp): Unix timestamp after which the token is invalid.",
+  iss: "Issuer (iss): The identity authority that issued the token.",
+  sub: "Subject (sub): The unique identifier of the user or entity.",
+  aud: "Audience (aud): The intended recipient or resource server.",
+  exp: "Expiration Time (exp): Unix timestamp after which the token expires.",
   nbf: "Not Before (nbf): Unix timestamp before which the token must not be accepted.",
-  iat: "Issued At (iat): Unix timestamp when the token was minted.",
-  jti: "JWT ID (jti): Unique identifier for one-time token tracking / revocation.",
+  iat: "Issued At (iat): Unix timestamp when the token was created.",
+  jti: "JWT ID (jti): Unique token identifier used for revocation or single-use verification.",
+  name: "Name (name): Full display name of the subject.",
+  email: "Email (email): Email address of the user.",
+  role: "Role (role): Access control or permission level of the subject.",
+  roles: "Roles (roles): Array of permission roles assigned to the subject.",
+  auth_time: "Authentication Time (auth_time): Time when the user originally authenticated.",
 };
+
+/**
+ * Strips Bearer prefixes, quotes, and whitespace from token input strings.
+ */
+export function cleanTokenInput(raw: string): string {
+  let cleaned = raw.trim();
+  cleaned = cleaned.replace(/^["']|["']$/g, "").trim();
+  if (cleaned.toLowerCase().startsWith("bearer ")) {
+    cleaned = cleaned.slice(7).trim();
+  }
+  return cleaned;
+}
 
 /**
  * Decodes a base64url string into a UTF-8 string safely.
  */
-function base64UrlDecode(str: string): string {
+export function base64UrlDecode(str: string): string {
   let base64 = str.replace(/-/g, "+").replace(/_/g, "/");
   while (base64.length % 4 !== 0) {
     base64 += "=";
@@ -22,7 +39,6 @@ function base64UrlDecode(str: string): string {
 
   if (typeof atob === "function") {
     const raw = atob(base64);
-    // Convert byte stream to UTF-8
     const bytes = Uint8Array.from(raw, (c) => c.charCodeAt(0));
     return new TextDecoder().decode(bytes);
   }
@@ -31,7 +47,7 @@ function base64UrlDecode(str: string): string {
   return Buffer.from(base64, "base64").toString("utf-8");
 }
 
-function formatRelativeTime(secondsDiff: number): string {
+export function formatRelativeTime(secondsDiff: number): string {
   const abs = Math.abs(secondsDiff);
   const minutes = Math.floor(abs / 60);
   const hours = Math.floor(minutes / 60);
@@ -55,7 +71,7 @@ export function computeJwtDecode(
   input: ValidatedJwtDecoderInput,
   currentEpochSeconds?: number,
 ): JwtDecoderOutputData {
-  const token = input.token.trim();
+  const token = cleanTokenInput(input.token || "");
 
   if (!token) {
     return {
@@ -67,7 +83,7 @@ export function computeJwtDecode(
       validation: { isExpired: false, isValidStructure: false },
       claimsList: [],
       isValid: false,
-      error: "No JWT token provided.",
+      error: "No JWT token provided. Paste a 3-part token (header.payload.signature) to decode.",
     };
   }
 
@@ -92,7 +108,11 @@ export function computeJwtDecode(
 
   try {
     const headerJson = base64UrlDecode(rawHeader);
-    header = JSON.parse(headerJson);
+    const parsed = JSON.parse(headerJson);
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      throw new Error("Not a JSON object");
+    }
+    header = parsed;
   } catch {
     return {
       header: {},
@@ -103,13 +123,17 @@ export function computeJwtDecode(
       validation: { isExpired: false, isValidStructure: false },
       claimsList: [],
       isValid: false,
-      error: "Malformed JWT Header: Failed to decode base64url or parse JSON.",
+      error: "Malformed JWT Header: Failed to decode base64url or parse JSON object.",
     };
   }
 
   try {
     const payloadJson = base64UrlDecode(rawPayload);
-    payload = JSON.parse(payloadJson);
+    const parsed = JSON.parse(payloadJson);
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      throw new Error("Not a JSON object");
+    }
+    payload = parsed;
   } catch {
     return {
       header,
@@ -120,7 +144,7 @@ export function computeJwtDecode(
       validation: { isExpired: false, isValidStructure: false },
       claimsList: [],
       isValid: false,
-      error: "Malformed JWT Payload: Failed to decode base64url or parse JSON.",
+      error: "Malformed JWT Payload: Failed to decode base64url or parse JSON object.",
     };
   }
 
@@ -128,9 +152,19 @@ export function computeJwtDecode(
 
   // Parse claims and validation parameters
   const claimsList: JwtClaimDetail[] = [];
-  const expVal = typeof payload.exp === "number" ? payload.exp : undefined;
-  const iatVal = typeof payload.iat === "number" ? payload.iat : undefined;
-  const nbfVal = typeof payload.nbf === "number" ? payload.nbf : undefined;
+
+  const parseEpoch = (val: unknown): number | undefined => {
+    if (typeof val === "number" && !isNaN(val)) return val;
+    if (typeof val === "string") {
+      const num = parseInt(val, 10);
+      if (!isNaN(num)) return num;
+    }
+    return undefined;
+  };
+
+  const expVal = parseEpoch(payload.exp);
+  const iatVal = parseEpoch(payload.iat);
+  const nbfVal = parseEpoch(payload.nbf);
 
   let isExpired = false;
   let timeRemaining: string | undefined;
@@ -142,19 +176,23 @@ export function computeJwtDecode(
 
   for (const [key, value] of Object.entries(payload)) {
     let formattedDate: string | undefined;
-    if (["exp", "iat", "nbf", "auth_time"].includes(key) && typeof value === "number") {
+    const epochNum = parseEpoch(value);
+    if (["exp", "iat", "nbf", "auth_time"].includes(key) && epochNum !== undefined) {
       try {
-        formattedDate = new Date(value * 1000).toUTCString();
+        formattedDate = new Date(epochNum * 1000).toUTCString();
       } catch {
         // Ignore date parse issues
       }
     }
+
+    const isStandardClaim = Object.prototype.hasOwnProperty.call(STANDARD_CLAIM_DESCRIPTIONS, key);
 
     claimsList.push({
       claim: key,
       value,
       description: STANDARD_CLAIM_DESCRIPTIONS[key] || "Custom application claim parameter.",
       formattedDate,
+      isStandardClaim,
     });
   }
 

@@ -7,6 +7,7 @@ export interface JwtClaimDetail {
   value: unknown;
   description: string;
   formattedDate?: string;
+  isStandardClaim: boolean;
 }
 
 export interface JwtTokenValidation {

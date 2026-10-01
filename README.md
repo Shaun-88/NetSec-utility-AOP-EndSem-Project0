@@ -15,7 +15,7 @@ Each tool possesses its own isolated UI, input validation schemas, and execution
 
 ---
 
-## 2. Tool Catalog
+## 2. Tool Catalog (18 Production Tools)
 
 ### 🌐 Network Diagnostics
 1. **Internet Speed Test** — Real-time latency, download, and upload bandwidth measurement.
@@ -24,19 +24,24 @@ Each tool possesses its own isolated UI, input validation schemas, and execution
 4. **Subnet Calculator** — CIDR math, network and broadcast addresses, usable host ranges.
 5. **Port Checker** — Target connectivity diagnostics with strict port allow-listing and SSRF protection.
 6. **Ping / Latency Checker** — HTTP round-trip timing, jitter calculation, and statistical latency analysis.
+7. **WHOIS / Domain Lookup** — Direct RDAP domain registration, expiry tracking, registrar, and nameserver audit.
 
 ### 🛡️ Cybersecurity Utilities
 1. **Password Generator** — Cryptographically secure generator utilizing `crypto.getRandomValues`.
 2. **Password Strength Checker** — Entropy scoring, pattern detection, and estimated crack time.
-3. **Hash Generator** — Multi-algorithm text hashing (MD5, SHA-1, SHA-256, SHA-384, SHA-512).
-4. **JWT Decoder** — Client-side header, payload, and claim inspection without remote transmission.
-5. **File Hash Checker** — Browser/server file checksum calculation for data integrity verification.
-6. **Security Header Analyzer** — Audit of HTTP security headers (CSP, HSTS, X-Frame-Options, etc.).
-7. **Binary ⇄ Text Converter** — Bidirectional string and binary stream translation.
+3. **Pwned Password Checker** — Zero-knowledge k-anonymity check against 900M+ leaked passwords via HIBP range API.
+4. **Data Breach Checker** — Multi-source compromised account detection via XposedOrNot and HIBP v3.
+5. **TLS/SSL Certificate Checker** — Direct socket inspection for issuer authority, expiry countdown, and cipher protocol.
+6. **Website Security Report (Composite)** — Parallel orchestration of DNS, Security Headers, TLS, and WHOIS into a unified letter-grade audit.
+7. **Security Header Analyzer** — Comprehensive HTTP security header assessment (CSP, HSTS, X-Frame-Options, Permissions-Policy).
+8. **Hash Generator** — Multi-algorithm text hashing (MD5, SHA-1, SHA-256, SHA-384, SHA-512).
+9. **File Hash Checker** — Direct file checksum verification across multiple digest algorithms.
+10. **JWT Decoder** — Client-side header, payload, and claim inspection without remote transmission.
+11. **Binary ⇄ Text Converter** — Bidirectional string and binary stream translation.
 
 ### 🧠 AI Intelligence Hub (AI Zone)
-- Domain-specific cybersecurity and network engineering reasoning assistant.
-- Explains findings, assists with troubleshooting, and provides historical result breakdowns.
+- Domain-specific cybersecurity and network engineering reasoning assistant powered by Google Gemini.
+- Explains diagnostic findings, guides remediation, and provides telemetry-aware summaries over your personal audit history.
 
 ---
 
@@ -105,14 +110,15 @@ npm run build
 ---
 
 ## 6. Project Roadmap
-
-- [x] **Phase 1 — Foundation:** Scaffold Next.js 15, TypeScript, Tailwind CSS, ESLint boundaries, Vitest test suite, Drizzle schema, GitHub Actions CI.
-- [ ] **Phase 2 — Shared Systems:** Auth.js Google OAuth, route protection middleware, `safe-fetch.ts` SSRF engine, tool template, and single API front door.
-- [ ] **Phase 3 — UI Shell & Home:** Loading screen, persistent multi-category sidebar, top search, and home overview dashboard.
-- [ ] **Phase 4 — Network Diagnostics:** Implementing the 6 network tools.
-- [ ] **Phase 5 — Cybersecurity Utilities:** Implementing the 7 security tools.
-- [ ] **Phase 6 — AI Intelligence Zone:** Cybersecurity assistant with history context.
-- [ ] **Phase 7 — Verification & Polish:** End-to-end tests, audit, and deployment.
+ 
+- [x] **Phase 1 — Foundation:** Next.js 15 App Router, TypeScript strict, Tailwind CSS, ESLint architectural boundaries, Vitest test suite, Drizzle ORM.
+- [x] **Phase 2 — Shared Systems:** Auth.js Google OAuth, route protection middleware, `safe-fetch.ts` SSRF guard engine, and unified tool runner.
+- [x] **Phase 3 — UI Shell & Pre-Load Visuals:** Terminal bootloader, particle blast transitions, interactive gate audio unlock, and session memory.
+- [x] **Phase 4 — Network Diagnostics:** Complete suite of 7 network tools (Speed Test, IP, DNS, Subnet, Port Checker, Ping, WHOIS).
+- [x] **Phase 5 — Cybersecurity Utilities:** Complete suite of 11 cybersecurity tools (Passwords, Hashes, JWT, Headers, TLS, Breaches, Security Report).
+- [x] **Phase 6 — AI Intelligence Zone:** Cybersecurity reasoning hub with telemetry history context powered by Google Gemini.
+- [x] **Phase 7 — History & Audit Retention:** Per-user audit history with automated 48-hour purge cron.
+- [x] **Phase 8 — Production & Deployment:** Production bundle optimization, clean typecheck, automated CI verification, and Vercel deployment.
 
 ---
 

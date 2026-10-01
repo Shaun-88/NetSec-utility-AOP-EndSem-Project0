@@ -23,6 +23,9 @@
 # Vercel
 .vercel
 
+# Scratch
+scratch/
+
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts

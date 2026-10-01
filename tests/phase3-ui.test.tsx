@@ -5,14 +5,14 @@ import BootProvider from "../src/components/BootProvider";
 import { tools } from "../src/registry/tools";
 
 describe("Phase 3: UI Shell & Boot Sequence", () => {
-  it("enforces tool registry invariants: exactly 13 tools categorized correctly", () => {
-    expect(tools.length).toBe(13);
+  it("enforces tool registry invariants: exactly 18 tools categorized correctly", () => {
+    expect(tools.length).toBe(18);
 
     const networkTools = tools.filter((t) => t.category === "network");
     const cyberTools = tools.filter((t) => t.category === "cybersecurity");
 
-    expect(networkTools.length).toBe(6);
-    expect(cyberTools.length).toBe(7);
+    expect(networkTools.length).toBe(7);
+    expect(cyberTools.length).toBe(11);
 
     // Verify all tools have required architecture fields
     for (const tool of tools) {
@@ -30,7 +30,13 @@ describe("Phase 3: UI Shell & Boot Sequence", () => {
       <BootScreen onComplete={onComplete} minDurationMs={10000} />,
     );
 
-    // Initial render shows boot sequence indicators
+    // Initial render shows GATE screen
+    expect(screen.getByText(/PRESS ENTER TO BEGIN/i)).toBeTruthy();
+
+    // Trigger Enter to start boot
+    fireEvent.keyDown(window, { key: "Enter" });
+
+    // Now it should show booting screen
     expect(screen.getByText(/Initial boot sequence/i)).toBeTruthy();
     expect(screen.getByText(/Press/i)).toBeTruthy();
 
@@ -43,30 +49,17 @@ describe("Phase 3: UI Shell & Boot Sequence", () => {
     unmount();
   });
 
-  it("BootProvider renders children when boot_sequence_completed is set in sessionStorage", () => {
-    sessionStorage.setItem("boot_sequence_completed", "true");
-    const { container } = render(
-      <BootProvider>
-        <div data-testid="app-content">Armoury Home Content</div>
-      </BootProvider>,
-    );
 
-    expect(screen.getByTestId("app-content")).toBeDefined();
-    expect(screen.queryByText(/Initial boot sequence/i)).toBeNull();
-    expect(container.querySelector(".invisible")).toBeNull();
-    sessionStorage.clear();
-  });
 
-  it("BootProvider renders BootScreen when session is fresh", () => {
-    sessionStorage.clear();
+  it("BootProvider renders BootScreen on initial load", () => {
     const { container } = render(
       <BootProvider>
         <div data-testid="app-content">Protected Content</div>
       </BootProvider>,
     );
 
-    // BootScreen is rendered on top
-    expect(screen.getByText(/Initial boot sequence/i)).toBeDefined();
+    // BootScreen is rendered on top in GATE phase
+    expect(screen.getByText(/PRESS ENTER TO BEGIN/i)).toBeDefined();
     // Underlying content is rendered directly (covered by fixed BootScreen, not trapped by invisible)
     expect(screen.getByTestId("app-content")).toBeDefined();
     expect(container.querySelector(".invisible")).toBeNull();

@@ -4,6 +4,8 @@ import type { NextAuthConfig } from "next-auth";
  * Edge-safe NextAuth configuration for use in middleware and server runtime.
  */
 export const authConfig: NextAuthConfig = {
+  trustHost: true,
+  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
   pages: {
     signIn: "/signin",
   },
@@ -18,6 +20,8 @@ export const authConfig: NextAuthConfig = {
       // Allow public endpoints to pass through
       if (
         pathname === "/signin" ||
+        pathname === "/privacy" ||
+        pathname === "/terms" ||
         pathname.startsWith("/api/auth") ||
         pathname.startsWith("/api/tools") ||
         pathname.startsWith("/_next") ||

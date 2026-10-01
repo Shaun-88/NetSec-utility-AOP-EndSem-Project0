@@ -1,39 +1,65 @@
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
-import { usePathname } from "next/navigation";
 import BootScreen from "./BootScreen";
+import { playSound } from "@/utils/audio";
 
 export default function BootProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // Start with hasBooted false so BootScreen covers the viewport from frame 0
   const [hasBooted, setHasBooted] = useState<boolean>(false);
-  const pathname = usePathname();
+  const [isMounting, setIsMounting] = useState<boolean>(true);
 
   useEffect(() => {
-    // If on signin, always reset boot flag so BootScreen plays first on fresh open / refresh
-    if (pathname === "/signin") {
+    const handleGlobalClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest("button") || target.closest("a") || target.closest("[role='button']")) {
+        playSound("click");
+      }
+    };
+    
+    // Use mousedown for faster perceived response
+    document.addEventListener("mousedown", handleGlobalClick);
+    return () => document.removeEventListener("mousedown", handleGlobalClick);
+  }, []);
+
+  useEffect(() => {
+    // Check if this is a hard reload
+    let isReload = false;
+    if (typeof performance !== "undefined") {
+      const navEntries = performance.getEntriesByType("navigation");
+      if (navEntries.length > 0) {
+        const navEntry = navEntries[0] as PerformanceNavigationTiming;
+        if (navEntry.type === "reload") {
+          isReload = true;
+        }
+      }
+    }
+
+    if (isReload) {
       try {
         sessionStorage.removeItem("boot_sequence_completed");
       } catch {}
       setHasBooted(false);
+      setIsMounting(false);
       return;
     }
 
-    // Inside authenticated app, check if boot sequence has already executed in this browser session
     try {
       const bootedSession = sessionStorage.getItem("boot_sequence_completed");
       if (bootedSession === "true") {
         setHasBooted(true);
+      } else {
+        setHasBooted(false);
       }
     } catch {
-      // Fallback if storage is restricted
       setHasBooted(true);
     }
-  }, [pathname]);
+    
+    setIsMounting(false);
+  }, []); // Run only on initial mount to avoid resetting during client navigation
 
   const handleBootComplete = useCallback(() => {
     try {
@@ -41,6 +67,10 @@ export default function BootProvider({
     } catch {}
     setHasBooted(true);
   }, []);
+
+  if (isMounting) {
+    return <div className="fixed inset-0 z-[10000] bg-[#070a10]" />;
+  }
 
   return (
     <>

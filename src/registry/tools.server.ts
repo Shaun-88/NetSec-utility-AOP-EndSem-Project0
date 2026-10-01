@@ -19,4 +19,9 @@ export const serverHandlers: Record<
   "security-headers": () => import("@/tools/security-headers/server"),
   "security-header": () => import("@/tools/security-headers/server"),
   "file-hash": () => import("@/tools/file-hash/server"),
+  "breach-checker": () => import("@/tools/breach-checker/server"),
+  "tls-checker": () => import("@/tools/tls-checker/server"),
+  "whois": () => import("@/tools/whois/server"),
+  "website-security-report": () => import("@/tools/website-security-report/server"),
+  "pwned-password": () => import("@/tools/pwned-password/server"),
 };

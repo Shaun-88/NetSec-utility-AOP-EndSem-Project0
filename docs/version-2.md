@@ -1,4 +1,4 @@
-# Version 2 — Tool Polish, History, AI Zone & Final Phases
+# Version 2 — Pre-Load Experience, Tool Polish, History, AI Zone & Final Phases
 
 Addendum to `docs/project-brief.md` and `docs/architecture.md`, not a
 replacement — read those first. This assumes Phases 1-5 already exist and
@@ -12,10 +12,84 @@ someone would use it** — written for a first-time visitor, not a
 classmate. Put this above or beside the tool's input form, not buried in a
 tooltip.
 
-Build order: tool polish (Network Tools, then CyberSec Tools) → sidebar +
-History system → AI Zone (when you reach it, see its own section) →
-debugging/testing → production/deployment. One prompt per tool, review the
-diff, then move on — same discipline as every phase before this.
+Build order: pre-load visual experience → tool polish (Network Tools, then
+CyberSec Tools) → sidebar + History system → AI Zone (when you reach it,
+see its own section) → debugging/testing → production/deployment. One
+prompt per tool/section, review the diff, then move on — same discipline as
+every phase before this.
+
+---
+
+## Pre-Load Visual Experience
+
+A visual-enhancement pass on everything between opening the site and
+landing on Home. **Keep the existing color theme exactly as-is** (near-black
+background, terminal green primary accent, amber secondary, clean
+sans-serif typography, no monospace) — this is about animation and
+interactivity, not a redesign. **Take a screenshot after each visual change
+and visually verify it before moving on** — don't just confirm the code
+compiles.
+
+### 0. Press-to-start gate screen (new — precedes the boot loading screen)
+
+This exists specifically to solve a real technical constraint: browsers
+block audio from auto-playing with sound until the user has interacted with
+the page. Rather than a muted-by-default toggle, a deliberate "press to
+start" gate both solves this cleanly and reads as an intentional design
+choice.
+
+- Same visual theme and particle-animation style as the boot screen, but at
+  a calm/idle state — low particle density, slow movement, essentially a
+  resting version of the boot screen's visual.
+- A clear prompt, e.g. "Press Enter to begin" or a styled button.
+- The click/keypress does two things: (1) starts the boot loading sequence,
+  and (2) unlocks the background music to play at full volume from that
+  point on — the interaction itself satisfies the browser's audio
+  permission requirement, so no mute toggle is needed.
+- Optional nice-to-have: begin real background initialization (session
+  check, config load) silently during this screen, so the boot sequence
+  that follows already has a head start by the time the user presses start.
+
+### 1. Boot/loading screen (enhance existing)
+
+- Add a particle animation system in the background. At low progress
+  (~0%), particles are sparse and barely moving. As progress increases,
+  particle count and movement speed increase proportionally. At 100%,
+  trigger a "clean blast" transition — particles burst outward in a brief
+  radial flash — as the screen transitions to the sign-in page.
+- Background music plays here, unlocked by the press-to-start screen.
+- Timing logic (carried over from the original spec, restated for
+  clarity): the screen only reaches 100% once real asset loading is
+  actually complete **and** at least 10 seconds have elapsed, whichever is
+  longer (`Math.max(realLoadTime, 10000)`). If real loading finishes before
+  10 seconds, the progress animation continues smoothly toward 100% rather
+  than jumping there early and sitting still.
+- Keep the existing skip-loading-screen option on this screen — don't
+  remove it.
+
+### 2. Sign-in page
+
+- Add an animated background consistent with the existing theme
+  (implementer's creative judgment on the specific effect, as long as it
+  matches the established palette and mood).
+- Add the standard "already have a session" flow: if a valid existing
+  session is detected, show "Continue as [name]" and "Sign in with a
+  different account" instead of immediately showing just the Google
+  sign-in button.
+
+### 3. Post-login transition (new)
+
+- After successful Google sign-in, show a brief "Login successful"
+  confirmation, followed by a short transition (a few seconds) during which
+  the user's profile/history is loaded from Neon, before proceeding to the
+  Home page.
+- **Do not add a skip option to this transition** — unlike the boot loading
+  screen, this one should not be skippable.
+
+**Recommended model for this section specifically:** Gemini 3.1 Pro
+(High) — it tends to produce the strongest visual output in head-to-head UI
+comparisons, and pairs natively with Antigravity's browser-screenshot
+verification loop, which matters a lot for a section this visual.
 
 ---
 
@@ -145,6 +219,102 @@ diff, then move on — same discipline as every phase before this.
 - **Description:** plain-language explainer of what binary is and why
   converting between it and text is a thing people do (e.g. as a learning
   tool for how computers represent text).
+
+---
+
+## New Tools — Breach Checker, TLS Checker, WHOIS, Composite Security Report
+
+Four new additions beyond the original 13 tools, aimed at making the
+toolkit feel like a cohesive service rather than a list of utilities. All
+four follow the same tool-folder contract as every existing tool
+(`docs/architecture.md` §3) — same plain-language-description requirement
+as everything in this document, same visual/UI patterns as the existing
+tools (reuse existing components: result cards, the letter-grade badge
+style already built for Security Header Analyzer, etc.) — nothing about
+these should look or feel bolted-on.
+
+### Breach Checker (new — CyberSec Tools)
+- **What it does:** checks whether an entered email appears in any known,
+  already-public data breach, via the free Have I Been Pwned API (no key
+  needed for the breach-search endpoint used here).
+- **Description:** plain-language explainer of what a "breach" is, and the
+  honest caveat that a clean result means "not found in a known breach,"
+  not a guarantee of safety — some breaches are never publicly disclosed.
+- **Result:** list of breaches found (name, date, what categories of data
+  were exposed — never actual leaked values, HIBP doesn't return those
+  anyway). Each result that involved exposed passwords links directly to
+  the Password Generator, with copy like "change this password — and
+  anywhere else you reused it."
+- **Database/history handling — important:** this is the most sensitive
+  tool in the catalog (it's about personal exposure, not a technical
+  check). The existing 2-day auto-delete (already specified under History
+  system) applies here with **no exception** — don't add any special
+  longer retention for this tool's results, even though the temptation
+  with "security" tools is often to keep more history, not less.
+
+### TLS/SSL Certificate Checker (new — CyberSec Tools)
+- **What it does:** issuer, validity dates, days-until-expiry, and
+  protocol version for a domain's TLS certificate, via Node's built-in
+  `tls` module — no external API needed.
+- **Description:** plain-language explainer of what a TLS certificate is
+  and why its expiry date matters (an expired certificate breaks HTTPS for
+  visitors).
+- Uses `safeFetch`/the same connection-safety principles as other
+  domain-checking tools — no connecting to arbitrary internal addresses.
+
+### WHOIS / Domain Lookup (new — Network Tools)
+- **What it does:** registration date, registrar, and expiry for a domain,
+  via RDAP (free, no key needed — IANA's bootstrap service or rdap.org).
+- **Description:** plain-language explainer of what domain registration
+  info shows and why someone would check it (e.g. "how old is this
+  domain" is a common trust signal).
+
+### Website Security Report (new — composite, lives under CyberSec Tools)
+
+This is the flagship addition — not a new independent check, but one page
+that runs DNS Lookup, Security Header Analyzer, the new TLS Checker, and
+the new WHOIS tool together against a single domain, then shows one
+combined report with an overall grade. This is what turns "a pile of
+tools" into "a service that audits your site."
+
+**Architecture — read carefully, this is the part that must be done
+correctly:**
+- This tool's `server.ts` **must not** import any other tool's folder
+  directly (`src/tools/dns-lookup/**`, etc.) — that would violate the core
+  "no tool imports another tool" rule in `docs/architecture.md` §1, and the
+  ESLint boundary rule should catch it if attempted.
+- Instead, it calls the **same shared execution function** that
+  `core/tool-kit/runner.ts` already exposes and that the `/api/tools/
+  [toolId]` route already uses internally — the one that looks up a tool in
+  the registry and runs it. Call that shared function four times (once per
+  underlying `toolId`: `dns-lookup`, `security-header`, `tls-checker`,
+  `whois`), **in parallel** (`Promise.all`), not sequentially — the
+  existing 8-second per-tool timeout means four sequential calls could
+  otherwise take up to ~32 seconds.
+- Each underlying call still runs through the full existing pipeline
+  (validation, rate-limiting, its own history logging) exactly as if the
+  user had run that tool individually — this is intentional, not a bug: it
+  means the user's history also shows the four individual checks, and
+  the composite report needs no special-case "don't log" logic anywhere in
+  `core`.
+- After all four return, compute one overall letter grade from their
+  individual results (reuse the grading approach already built for
+  Security Header Analyzer rather than inventing a second grading system),
+  and save **one additional** `tool_history` entry for the composite
+  report itself (`toolId: "website-security-report"`), with the four
+  sub-results nested in its `data` field.
+- **UI:** reuse the existing letter-grade badge component from Security
+  Header Analyzer for the overall grade, and the existing result-card
+  pattern for each of the four sub-sections — this page should look like a
+  natural extension of the existing tools, not a new design.
+
+### On AI Zone compatibility
+No special integration work is needed for these four tools specifically.
+Because they follow the same registry + `tool_history` pattern as every
+other tool, they become automatically available to AI Zone's history-aware
+features (tool guidance, on-request reports) once AI Zone itself is built
+— same as the original 13 tools. Don't build any AI-specific code as part
+of this section.
 
 ---
 

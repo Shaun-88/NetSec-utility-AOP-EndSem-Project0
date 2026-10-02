@@ -92,10 +92,15 @@ export default function SettingsPage() {
         {/* Section 1: Audio & Acoustic Feedback */}
         <div className="border border-[#182234] bg-[#0d131f] rounded-2xl p-6 space-y-4">
           <div>
-            <h2 className="text-sm font-bold text-white flex items-center gap-2">
-              <Volume2 className="w-4 h-4 text-[#00e575]" />
-              <span>Audio &amp; Acoustic Feedback</span>
-            </h2>
+            <div className="flex items-center gap-2.5">
+              <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                <Volume2 className="w-4 h-4 text-[#00e575]" />
+                <span>Audio &amp; Acoustic Feedback</span>
+              </h2>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-medium">
+                Under Testing
+              </span>
+            </div>
             <p className="text-xs text-slate-400 mt-0.5">
               Customize terminal interface sound effects and atmospheric boot audio.
             </p>

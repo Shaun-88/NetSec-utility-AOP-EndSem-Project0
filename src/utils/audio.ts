@@ -1,5 +1,28 @@
-export const playSound = (type: "click" | "hover" | "flash" | "boot") => {
+export const isSoundFxEnabled = (): boolean => {
+  if (typeof window === "undefined") return true;
+  return localStorage.getItem("netsec_sound_fx") !== "false";
+};
+
+export const setSoundFxEnabled = (enabled: boolean): void => {
   if (typeof window === "undefined") return;
+  localStorage.setItem("netsec_sound_fx", enabled ? "true" : "false");
+  window.dispatchEvent(new CustomEvent("netsec_audio_config_changed"));
+};
+
+export const isAmbientBgmEnabled = (): boolean => {
+  if (typeof window === "undefined") return true;
+  return localStorage.getItem("netsec_ambient_bgm") !== "false";
+};
+
+export const setAmbientBgmEnabled = (enabled: boolean): void => {
+  if (typeof window === "undefined") return;
+  localStorage.setItem("netsec_ambient_bgm", enabled ? "true" : "false");
+  window.dispatchEvent(new CustomEvent("netsec_audio_config_changed"));
+};
+
+export const playSound = (type: "click" | "hover" | "flash" | "boot", force = false) => {
+  if (typeof window === "undefined") return;
+  if (!force && !isSoundFxEnabled()) return;
 
   try {
     const AudioContext = window.AudioContext || (window as Window & { webkitAudioContext?: typeof window.AudioContext }).webkitAudioContext;

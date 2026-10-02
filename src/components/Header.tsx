@@ -1,17 +1,37 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Search, Sun, Moon, Shield, X, ArrowRight } from "lucide-react";
-import { useTheme } from "./ThemeProvider";
+import { Search, Volume2, VolumeX, Shield, X, ArrowRight } from "lucide-react";
+import { isSoundFxEnabled, setSoundFxEnabled, playSound } from "@/utils/audio";
 import { tools } from "@/registry/tools";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export default function Header() {
-  const { theme, toggleTheme } = useTheme();
+  const [soundEnabled, setSoundEnabled] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
   const router = useRouter();
+
+  useEffect(() => {
+    setSoundEnabled(isSoundFxEnabled());
+    const handleAudioChange = () => {
+      setSoundEnabled(isSoundFxEnabled());
+    };
+    window.addEventListener("netsec_audio_config_changed", handleAudioChange);
+    return () => {
+      window.removeEventListener("netsec_audio_config_changed", handleAudioChange);
+    };
+  }, []);
+
+  const toggleSound = () => {
+    const next = !soundEnabled;
+    setSoundEnabled(next);
+    setSoundFxEnabled(next);
+    if (next) {
+      playSound("click", true);
+    }
+  };
 
   // Keyboard shortcut Ctrl+K / Cmd+K
   useEffect(() => {
@@ -71,17 +91,17 @@ export default function Header() {
             <span className="text-slate-400">Tools Active</span>
           </div>
 
-          {/* Theme Toggle (Dark / Light) */}
+          {/* Quick Sound FX Toggle */}
           <button
-            onClick={toggleTheme}
+            onClick={toggleSound}
             className="p-2 rounded-lg bg-[#080b11] border border-[#182234] text-slate-300 hover:text-white hover:border-[#00e575]/40 transition-colors"
-            title={`Switch to ${theme === "dark" ? "Light" : "Dark"} mode`}
-            aria-label="Toggle theme"
+            title={soundEnabled ? "Mute interface sound effects" : "Enable interface sound effects"}
+            aria-label="Toggle sound effects"
           >
-            {theme === "dark" ? (
-              <Sun className="w-4 h-4 text-[#f59e0b]" />
+            {soundEnabled ? (
+              <Volume2 className="w-4 h-4 text-[#00e575]" />
             ) : (
-              <Moon className="w-4 h-4 text-slate-400" />
+              <VolumeX className="w-4 h-4 text-slate-500" />
             )}
           </button>
 

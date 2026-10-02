@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { tools } from "@/registry/tools";
 import { getToolIcon } from "./toolIconMap";
@@ -16,6 +16,7 @@ let audioCtx: AudioContext | null = null;
 
 const initAudio = () => {
   if (typeof window !== "undefined" && !audioCtx) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
     if (AudioContextClass) {
       audioCtx = new AudioContextClass();
@@ -96,7 +97,6 @@ export default function AiNetworkCta() {
   // Animation States
   const [rotation, setRotation] = useState(0);
   const [hoveredTool, setHoveredTool] = useState<string | null>(null);
-  const [isHoveringCenter, setIsHoveringCenter] = useState(false);
   
   // Transition States
   const [transitionPhase, setTransitionPhase] = useState<'idle' | 'imploding' | 'exploding'>('idle');
@@ -112,7 +112,7 @@ export default function AiNetworkCta() {
 
   // 1. Cinematic Loading Sequence
   useEffect(() => {
-    let startTime = performance.now();
+    const startTime = performance.now();
     const duration = 4000; // 4 seconds of cinematic loading
 
     const animateLoader = (time: number) => {
@@ -398,7 +398,7 @@ export default function AiNetworkCta() {
         style={{ animation: 'glitch-text 4s infinite' }}
       >
          <p className="text-[9px] uppercase font-bold tracking-widest text-[#00e575] leading-relaxed">
-            All tools and data produced are Powering <span className="text-white">"Big Bro"</span>.
+            All tools and data produced are Powering <span className="text-white">&quot;Big Bro&quot;</span>.
             <br/><br/>
             Click the core to visit him.
          </p>
@@ -503,10 +503,8 @@ export default function AiNetworkCta() {
       <button
         onClick={handleCenterClick}
         onMouseEnter={() => {
-           setIsHoveringCenter(true);
            if (transitionPhase === 'idle') playHumSound();
         }}
-        onMouseLeave={() => setIsHoveringCenter(false)}
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] flex items-center justify-center w-32 h-32 group/core outline-none cursor-pointer"
         title="Initialize Big Bro"
       >

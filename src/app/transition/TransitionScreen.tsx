@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, Loader2, Database } from "lucide-react";
+import { CheckCircle2, Loader2 } from "lucide-react";
 
 import { playSound } from "@/utils/audio";
 

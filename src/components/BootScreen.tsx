@@ -76,7 +76,7 @@ class Particle {
   }
 }
 
-import { playSound, isAmbientBgmEnabled } from "@/utils/audio";
+import { playSound } from "@/utils/audio";
 
 export default function BootScreen({
   onComplete,
@@ -118,7 +118,7 @@ export default function BootScreen({
   const startBoot = React.useCallback(() => {
     if (phase !== "GATE") return;
     setPhase("BOOTING");
-    if (audioRef.current && isAmbientBgmEnabled()) {
+    if (audioRef.current) {
       audioRef.current.volume = 1;
       const playPromise = audioRef.current.play();
       if (playPromise !== undefined) {

@@ -2,28 +2,18 @@
 
 import React, { useState, useEffect } from "react";
 import AppShell from "@/components/AppShell";
+import { useTheme } from "@/components/ThemeProvider";
 import { signOut } from "next-auth/react";
-import { Volume2, VolumeX, Music, Play, LogOut, CheckCircle } from "lucide-react";
-import {
-  isSoundFxEnabled,
-  setSoundFxEnabled,
-  isAmbientBgmEnabled,
-  setAmbientBgmEnabled,
-  playSound,
-} from "@/utils/audio";
+import { Sun, Moon, LogOut, CheckCircle } from "lucide-react";
 
 export default function SettingsPage() {
-  const [soundFx, setSoundFx] = useState(true);
-  const [ambientBgm, setAmbientBgm] = useState(true);
+  const { theme, setTheme } = useTheme();
   const [displayName, setDisplayName] = useState("");
   const [saving, setSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setSoundFx(isSoundFxEnabled());
-    setAmbientBgm(isAmbientBgmEnabled());
-
     fetch("/api/user/profile")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
@@ -31,19 +21,6 @@ export default function SettingsPage() {
       })
       .catch(() => {});
   }, []);
-
-  const handleToggleSoundFx = (enabled: boolean) => {
-    setSoundFx(enabled);
-    setSoundFxEnabled(enabled);
-    if (enabled) {
-      playSound("click", true);
-    }
-  };
-
-  const handleToggleAmbientBgm = (enabled: boolean) => {
-    setAmbientBgm(enabled);
-    setAmbientBgmEnabled(enabled);
-  };
 
   const handleSaveName = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,125 +66,65 @@ export default function SettingsPage() {
           </p>
         </div>
 
-        {/* Section 1: Audio & Acoustic Feedback */}
+        {/* Section 1: Theme Preferences */}
         <div className="border border-[#182234] bg-[#0d131f] rounded-2xl p-6 space-y-4">
           <div>
-            <div className="flex items-center gap-2.5">
-              <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                <Volume2 className="w-4 h-4 text-[#00e575]" />
-                <span>Audio &amp; Acoustic Feedback</span>
-              </h2>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-medium">
-                Under Testing
-              </span>
-            </div>
+            <h2 className="text-sm font-bold text-white">Appearance &amp; Theme</h2>
             <p className="text-xs text-slate-400 mt-0.5">
-              Customize terminal interface sound effects and atmospheric boot audio.
+              Select between the default dark terminal palette and daytime light mode.
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-            {/* Sound FX Card */}
-            <div
-              className={`p-4 rounded-xl border transition-all ${
-                soundFx
-                  ? "border-[#00e575]/40 bg-[#080b11]"
-                  : "border-[#182234] bg-[#080b11]/60"
+            {/* Dark Theme Option */}
+            <button
+              onClick={() => setTheme("dark")}
+              className={`p-4 rounded-xl border text-left flex items-start gap-3.5 transition-all ${
+                theme === "dark"
+                  ? "border-[#00e575] bg-[#080b11] shadow-glow"
+                  : "border-[#182234] bg-[#080b11]/60 hover:border-slate-700"
               }`}
             >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`p-2.5 rounded-lg ${
-                      soundFx
-                        ? "bg-[#00e575]/10 text-[#00e575]"
-                        : "bg-slate-850 text-slate-500"
-                    }`}
-                  >
-                    {soundFx ? (
-                      <Volume2 className="w-5 h-5" />
-                    ) : (
-                      <VolumeX className="w-5 h-5" />
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="text-xs font-bold text-white">
-                      Interface Sound Effects
-                    </h3>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
-                      Button clicks, hover tones, and alert chirps.
-                    </p>
-                  </div>
+              <div className="p-2.5 rounded-lg bg-[#00e575]/10 text-[#00e575] flex-shrink-0">
+                <Moon className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-white">Dark Mode (Default)</span>
+                  {theme === "dark" && (
+                    <span className="w-2 h-2 rounded-full bg-[#00e575]" />
+                  )}
                 </div>
+                <p className="text-[11px] text-slate-400">
+                  Near-black background with terminal green accents and subtle scanlines.
+                </p>
               </div>
+            </button>
 
-              <div className="mt-4 flex items-center justify-between pt-3 border-t border-[#182234]">
-                <button
-                  type="button"
-                  onClick={() => playSound("click", true)}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#121927] hover:bg-[#182234] text-[11px] text-slate-300 hover:text-white transition-colors"
-                >
-                  <Play className="w-3 h-3 text-[#00e575]" />
-                  <span>Test Tone</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleToggleSoundFx(!soundFx)}
-                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
-                    soundFx
-                      ? "bg-[#00e575]/20 text-[#00e575] border border-[#00e575]/40"
-                      : "bg-slate-800 text-slate-400 border border-slate-700 hover:text-white"
-                  }`}
-                >
-                  {soundFx ? "Enabled" : "Muted"}
-                </button>
-              </div>
-            </div>
-
-            {/* Ambient BGM Card */}
-            <div
-              className={`p-4 rounded-xl border transition-all ${
-                ambientBgm
-                  ? "border-[#00e575]/40 bg-[#080b11]"
-                  : "border-[#182234] bg-[#080b11]/60"
+            {/* Light Theme Option */}
+            <button
+              onClick={() => setTheme("light")}
+              className={`p-4 rounded-xl border text-left flex items-start gap-3.5 transition-all ${
+                theme === "light"
+                  ? "border-[#00e575] bg-[#080b11] shadow-glow"
+                  : "border-[#182234] bg-[#080b11]/60 hover:border-slate-700"
               }`}
             >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`p-2.5 rounded-lg ${
-                      ambientBgm
-                        ? "bg-[#00e575]/10 text-[#00e575]"
-                        : "bg-slate-850 text-slate-500"
-                    }`}
-                  >
-                    <Music className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-xs font-bold text-white">
-                      Boot Background Audio
-                    </h3>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
-                      Atmospheric synth music during terminal boot.
-                    </p>
-                  </div>
+              <div className="p-2.5 rounded-lg bg-[#f59e0b]/10 text-[#f59e0b] flex-shrink-0">
+                <Sun className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-white">Light Mode</span>
+                  {theme === "light" && (
+                    <span className="w-2 h-2 rounded-full bg-[#00e575]" />
+                  )}
                 </div>
+                <p className="text-[11px] text-slate-400">
+                  High-contrast daylight theme with deep emerald and amber indicators.
+                </p>
               </div>
-
-              <div className="mt-4 flex items-center justify-end pt-3 border-t border-[#182234]">
-                <button
-                  type="button"
-                  onClick={() => handleToggleAmbientBgm(!ambientBgm)}
-                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
-                    ambientBgm
-                      ? "bg-[#00e575]/20 text-[#00e575] border border-[#00e575]/40"
-                      : "bg-slate-800 text-slate-400 border border-slate-700 hover:text-white"
-                  }`}
-                >
-                  {ambientBgm ? "Enabled" : "Muted"}
-                </button>
-              </div>
-            </div>
+            </button>
           </div>
         </div>
 

@@ -140,11 +140,16 @@ export default function TransitionScreen({ nextRoute = "/home" }: { nextRoute?: 
 
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-3">
-              <Database className={`w-5 h-5 ${step >= 2 ? "text-[#00e575]" : "text-slate-700"}`} />
-              <span className={step >= 2 ? "text-slate-200" : "text-slate-600"}>
+              {step >= 3 ? (
+                <CheckCircle2 className="w-5 h-5 text-[#00e575]" />
+              ) : (
+                <Loader2 className={`w-5 h-5 ${step >= 2 ? "text-[#00e575] animate-spin" : "text-slate-700"}`} />
+              )}
+              <span className={step >= 3 ? "text-slate-200" : step >= 2 ? "text-slate-300" : "text-slate-600"}>
                 Establishing secure connection
               </span>
             </div>
+            {step >= 3 && <span className="text-xs text-[#00e575]">OK</span>}
           </div>
         </div>
 

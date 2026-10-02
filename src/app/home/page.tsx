@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import AppShell from "@/components/AppShell";
+import AiNetworkCta from "@/components/AiNetworkCta";
 import { tools } from "@/registry/tools";
 import Link from "next/link";
 import {
@@ -180,6 +181,8 @@ export default function HomePage() {
           </div>
         </div>
 
+        <AiNetworkCta />
+
         {/* Tool Filter Tabs */}
         <div className="flex items-center justify-between flex-wrap gap-4 border-b border-[#182234] pb-4">
           <div>
@@ -239,6 +242,7 @@ export default function HomePage() {
             return (
               <div
                 key={t.id}
+                id={t.id}
                 className="border border-[#182234] bg-[#0d131f] hover:border-[#00e575]/40 rounded-2xl p-5 flex flex-col justify-between transition-all duration-200 hover:shadow-xl group"
               >
                 <div className="space-y-3">

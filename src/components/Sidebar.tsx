@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { tools } from "@/registry/tools";
+import { getToolIcon } from "./toolIconMap";
 import {
   Globe,
   Shield,
@@ -121,6 +122,7 @@ export default function Sidebar() {
                 {networkTools.map((t) => {
                   const href = `/tools/${t.id}`;
                   const isActive = pathname === href;
+                  const ToolIcon = getToolIcon(t.id);
                   return (
                     <Link
                       key={t.id}
@@ -132,9 +134,12 @@ export default function Sidebar() {
                           : "text-slate-400 hover:text-slate-200 hover:bg-[#121927]"
                       }`}
                     >
-                      <span className="truncate">{t.name}</span>
+                      <div className="flex items-center gap-2 truncate">
+                        <ToolIcon className="w-3.5 h-3.5 flex-shrink-0 opacity-70" />
+                        <span className="truncate">{t.name}</span>
+                      </div>
                       {t.sequenceNumber && (
-                        <span className="text-[10px] text-slate-500 font-sans">
+                        <span className="text-[10px] text-slate-500 font-sans flex-shrink-0 ml-2">
                           {t.sequenceNumber}
                         </span>
                       )}
@@ -172,6 +177,7 @@ export default function Sidebar() {
                 {cyberTools.map((t) => {
                   const href = `/tools/${t.id}`;
                   const isActive = pathname === href;
+                  const ToolIcon = getToolIcon(t.id);
                   return (
                     <Link
                       key={t.id}
@@ -183,9 +189,12 @@ export default function Sidebar() {
                           : "text-slate-400 hover:text-slate-200 hover:bg-[#121927]"
                       }`}
                     >
-                      <span className="truncate">{t.name}</span>
+                      <div className="flex items-center gap-2 truncate">
+                        <ToolIcon className="w-3.5 h-3.5 flex-shrink-0 opacity-70" />
+                        <span className="truncate">{t.name}</span>
+                      </div>
                       {t.sequenceNumber && (
-                        <span className="text-[10px] text-slate-500 font-sans">
+                        <span className="text-[10px] text-slate-500 font-sans flex-shrink-0 ml-2">
                           {t.sequenceNumber}
                         </span>
                       )}
@@ -195,7 +204,7 @@ export default function Sidebar() {
               </div>
             )}
           </div>
-          {/* Section 3: AI Zone */}
+          {/* Section 3: Big Bro */}
           <div className="pt-1">
             <Link
               href="/ai-zone"
@@ -207,11 +216,11 @@ export default function Sidebar() {
               }`}
             >
               <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-amber-400" />
-                <span className="uppercase tracking-wider">AI Zone</span>
+                <Sparkles className="w-4 h-4 text-[#00e575]" />
+                <span className="uppercase tracking-wider font-bold">Big Bro</span>
               </div>
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-medium">
-                Agent
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#00e575]/10 text-[#00e575] border border-[#00e575]/20 font-bold">
+                AI
               </span>
             </Link>
           </div>

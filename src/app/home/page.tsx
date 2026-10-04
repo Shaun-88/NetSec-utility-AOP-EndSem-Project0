@@ -88,7 +88,7 @@ export default function HomePage() {
               Welcome back, <span className="text-[#00e575]">{userName}</span>
             </h1>
             <p className="text-xs text-slate-400 mt-1">
-              All 13 modular diagnostics and cryptographic utilities are primed and ready.
+              All {tools.length} modular diagnostics and cryptographic utilities are primed and ready.
             </p>
           </div>
         </div>

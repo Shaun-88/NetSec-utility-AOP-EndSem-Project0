@@ -11,11 +11,12 @@ import {
   Settings,
   User,
   Sparkles,
-  History,
+  
   ChevronDown,
   ChevronRight,
   Menu,
   X,
+  FileText,
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -225,7 +226,7 @@ export default function Sidebar() {
             </Link>
           </div>
 
-          {/* Section 4: History */}
+          {/* Section 4: Threat Reports */}
           <div className="pt-0.5">
             <Link
               href="/history"
@@ -237,8 +238,8 @@ export default function Sidebar() {
               }`}
             >
               <div className="flex items-center gap-2">
-                <History className="w-4 h-4 text-sky-400" />
-                <span className="uppercase tracking-wider">History</span>
+                <FileText className="w-4 h-4 text-sky-400" />
+                <span className="uppercase tracking-wider font-bold">Threat Reports</span>
               </div>
               <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20 font-medium">
                 48h

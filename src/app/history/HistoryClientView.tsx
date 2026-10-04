@@ -26,7 +26,9 @@ import {
   AlertTriangle,
   Info,
   CheckCircle2,
+  FileText,
 } from "lucide-react";
+import jsPDF from "jspdf";
 
 interface HistoryClientViewProps {
   initialHistory: ToolHistoryRecord[];
@@ -41,6 +43,11 @@ export default function HistoryClientView({
   const [stats, setStats] = useState<HistoryStats>(initialStats);
   const [loading, setLoading] = useState(false);
   const [, startTransition] = useTransition();
+
+  // Report Generation State
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [reportStep, setReportStep] = useState<number>(0);
+  // 0: Idle, 1: Extracting telemetry, 2: AI Analyzing, 3: Compiling PDF, 4: Complete
 
   // Filters
   const [categoryFilter, setCategoryFilter] = useState<"all" | "network" | "cybersecurity">("all");
@@ -113,6 +120,148 @@ export default function HistoryClientView({
     }
   };
 
+  // Handle Generate Report
+  const handleGenerateReport = async () => {
+    if (history.length === 0) return;
+    setIsGeneratingReport(true);
+    setReportStep(1); // Extracting telemetry...
+
+    try {
+      // Step 2: AI Analyzing
+      setTimeout(() => setReportStep(2), 1500); 
+
+      // Take only the last 20 logs to avoid overwhelming the AI prompt
+      const recentLogs = history.slice(0, 20).map(r => {
+        const parsedData = r.data as Record<string, unknown>;
+        const isError = !!parsedData?.error;
+        return {
+          toolId: r.toolId,
+          target: r.target,
+          status: isError ? "ERROR" : "SUCCESS",
+          outputData: r.data,
+          ranAt: r.ranAt
+        };
+      });
+
+      const res = await fetch("/api/reports/summary", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ historyLogs: recentLogs }),
+      });
+      
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || "Failed to generate report due to a server error. Please try again.");
+        setIsGeneratingReport(false);
+        setReportStep(0);
+        return;
+      }
+      
+      const summaryText = data.summary;
+
+      // Step 3: Compiling PDF
+      setReportStep(3);
+
+      // Create PDF
+      const doc = new jsPDF();
+      const margin = 15;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      
+      // NetSec Header Block
+      doc.setFillColor(0, 229, 117); // Green background
+      doc.rect(0, 0, pageWidth, 35, 'F');
+      
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(20);
+      doc.setTextColor(255, 255, 255);
+      doc.text("THREAT INTELLIGENCE REPORT", margin, 20);
+      
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.text(`Generated: ${new Date().toLocaleString()}   |   Total Scans Analyzed: ${recentLogs.length}`, margin, 28);
+
+      // Executive Summary
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      doc.setTextColor(0, 0, 0);
+      doc.text("EXECUTIVE SUMMARY (AI ANALYSIS)", margin, 50);
+
+      doc.setDrawColor(0, 229, 117);
+      doc.setLineWidth(0.5);
+      doc.line(margin, 53, pageWidth - margin, 53);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10.5);
+      doc.setTextColor(40, 40, 40);
+      
+      // Split text into lines to fit page width
+      const splitSummary = doc.splitTextToSize(summaryText, pageWidth - margin * 2);
+      let cursorY = 62;
+      
+      splitSummary.forEach((line: string) => {
+        if (cursorY > 270) {
+          doc.addPage();
+          cursorY = 20;
+        }
+        doc.text(line, margin, cursorY);
+        cursorY += 6;
+      });
+      
+      cursorY += 15;
+
+      // Scan Log Section
+      if (cursorY > 240) {
+        doc.addPage();
+        cursorY = 20;
+      }
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      doc.setTextColor(0, 0, 0);
+      doc.text("RECENT SCAN LOG", margin, cursorY);
+      
+      doc.setDrawColor(0, 229, 117);
+      doc.line(margin, cursorY + 3, pageWidth - margin, cursorY + 3);
+      
+      cursorY += 12;
+      doc.setFont("courier", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(60, 60, 60);
+      
+      recentLogs.slice(0, 15).forEach(log => {
+        if (cursorY > 275) {
+          doc.addPage();
+          cursorY = 20;
+        }
+        const status = log.status.toUpperCase();
+        const dateStr = new Date(log.ranAt).toLocaleString();
+        
+        doc.setFont("courier", "bold");
+        doc.setTextColor(status === "ERROR" ? 220 : 0, status === "ERROR" ? 38 : 150, status === "ERROR" ? 38 : 0);
+        doc.text(`[${status}]`, margin, cursorY);
+        
+        doc.setFont("courier", "normal");
+        doc.setTextColor(60, 60, 60);
+        doc.text(`${log.toolId.toUpperCase()} -> ${log.target} (${dateStr})`, margin + 22, cursorY);
+        cursorY += 8;
+      });
+
+      // Save PDF
+      setReportStep(4); // Complete
+      setTimeout(() => {
+        doc.save("Threat-Intelligence-Report.pdf");
+        setIsGeneratingReport(false);
+        setReportStep(0);
+      }, 1000);
+
+    } catch (err) {
+      console.error("Report generation failed:", err);
+      setIsGeneratingReport(false);
+      setReportStep(0);
+    }
+  };
+
   // Handle Copy JSON
   const handleCopyJson = (record: ToolHistoryRecord) => {
     navigator.clipboard.writeText(JSON.stringify(record.data, null, 2));
@@ -176,13 +325,27 @@ export default function HistoryClientView({
           </button>
 
           {history.length > 0 && (
-            <button
-              onClick={() => setShowClearModal(true)}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#0d131f] hover:bg-rose-950/30 border border-[#182234] hover:border-rose-500/40 text-xs font-semibold text-slate-400 hover:text-rose-400 transition-colors"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Clear History</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleGenerateReport}
+                disabled={isGeneratingReport}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#00e575]/10 hover:bg-[#00e575]/20 border border-[#00e575]/30 text-xs font-semibold text-[#00e575] transition-colors disabled:opacity-50"
+              >
+                {isGeneratingReport ? (
+                  <RotateCw className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <FileText className="w-3.5 h-3.5" />
+                )}
+                <span>Download Report</span>
+              </button>
+              <button
+                onClick={() => setShowClearModal(true)}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#0d131f] hover:bg-rose-950/30 border border-[#182234] hover:border-rose-500/40 text-xs font-semibold text-slate-400 hover:text-rose-400 transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Clear History</span>
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -711,6 +874,48 @@ export default function HistoryClientView({
                   <span>Yes, Delete All</span>
                 )}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Report Generation Modal */}
+      {isGeneratingReport && (
+        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-[#070a10] border border-[#00e575]/40 p-8 flex flex-col items-center justify-center shadow-[0_0_50px_rgba(0,229,117,0.15)] relative overflow-hidden">
+            
+            {/* Scanline Effect */}
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#00e575]/5 to-transparent h-[200%] animate-scan" />
+
+            <div className="relative z-10 flex flex-col items-center text-center space-y-6">
+              {reportStep === 4 ? (
+                <CheckCircle2 className="w-16 h-16 text-[#00e575] animate-bounce" />
+              ) : (
+                <div className="relative w-16 h-16 flex items-center justify-center">
+                  <div className="absolute inset-0 rounded-full border-4 border-[#00e575]/20 border-t-[#00e575] animate-spin" />
+                  <FileText className="w-6 h-6 text-[#00e575] animate-pulse" />
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <h3 className="text-lg font-bold text-white uppercase tracking-widest">
+                  Intelligence Report
+                </h3>
+                <p className="text-xs font-mono text-[#00e575]">
+                  {reportStep === 1 && "> Extracting telemetry logs..."}
+                  {reportStep === 2 && "> Big Bro analyzing threat landscape..."}
+                  {reportStep === 3 && "> Compiling encrypted PDF dossier..."}
+                  {reportStep === 4 && "> Download complete."}
+                </p>
+              </div>
+
+              {/* Progress bar */}
+              <div className="w-full h-1.5 bg-[#182234] rounded-full overflow-hidden mt-4">
+                <div 
+                  className="h-full bg-[#00e575] transition-all duration-500 ease-out" 
+                  style={{ width: `${(reportStep / 4) * 100}%` }}
+                />
+              </div>
             </div>
           </div>
         </div>

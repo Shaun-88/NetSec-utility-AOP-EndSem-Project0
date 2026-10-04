@@ -91,3 +91,90 @@ body {
   animation: fadeIn 0.3s ease-out forwards;
 }
 
+
+/* =========================================
+   CYBER-TACTICAL SCROLLBAR
+   ========================================= */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 229, 117, 0.2);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 229, 117, 0.8);
+}
+
+/* For Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 229, 117, 0.2) var(--background);
+}
+
+/* =========================================
+   TACTICAL CURSOR
+   ========================================= */
+html, body {
+  /* We use a precise crosshair for the entire app */
+  cursor: crosshair;
+}
+
+/* Keep interactive elements user-friendly */
+button, a, [role="button"], input[type="submit"] {
+  cursor: pointer;
+}
+
+input[type="text"], input[type="password"], input[type="email"], textarea {
+  cursor: text;
+}
+
+/* =========================================
+   AMBIENT GLOW
+   ========================================= */
+:root {
+  --mouse-x: -1000px;
+  --mouse-y: -1000px;
+}
+
+.ambient-glow-overlay {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: radial-gradient(
+    800px circle at var(--mouse-x) var(--mouse-y),
+    rgba(0, 229, 117, 0.04),
+    transparent 40%
+  );
+  transition: opacity 0.3s ease;
+}
+
+.light .ambient-glow-overlay {
+  background: radial-gradient(
+    800px circle at var(--mouse-x) var(--mouse-y),
+    rgba(5, 150, 105, 0.05),
+    transparent 40%
+  );
+}
+
+/* =========================================
+   SONAR CLICK EFFECT
+   ========================================= */
+@keyframes sonarClick {
+  0% { transform: scale(0.2); opacity: 1; border-width: 3px; }
+  100% { transform: scale(2); opacity: 0; border-width: 1px; }
+}
+
+.animate-sonar-click {
+  animation: sonarClick 0.45s ease-out forwards;
+  box-shadow: 0 0 15px rgba(0, 229, 117, 0.8), inset 0 0 15px rgba(0, 229, 117, 0.6);
+  background: rgba(0, 229, 117, 0.15);
+}

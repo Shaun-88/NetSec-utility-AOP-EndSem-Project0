@@ -107,6 +107,9 @@ export default function AiNetworkCta() {
     Array.from({ length: ORBIT_SLOTS }, (_, i) => i % TOTAL_TOOLS)
   );
   
+  const rotationRef = useRef(0);
+  const slotToolsRef = useRef<number[]>(Array.from({ length: ORBIT_SLOTS }, (_, i) => i % TOTAL_TOOLS));
+  const nextToolIdxRef = useRef<number>(ORBIT_SLOTS % TOTAL_TOOLS);
   const prevAnglesRef = useRef<number[]>(Array(ORBIT_SLOTS).fill(0));
   const implosionRef = useRef(false);
 
@@ -285,31 +288,30 @@ export default function AiNetworkCta() {
         currentSpeed = 0.005; // Bullet time
       } 
       
-      setRotation((prev) => {
-        const nextRot = (prev + currentSpeed * delta) % 360;
+      const nextRot = (rotationRef.current + currentSpeed * delta) % 360;
+      rotationRef.current = nextRot;
+      setRotation(nextRot);
+      
+      if (transitionPhase === 'idle') {
+        let updated = false;
+        const newSlotTools = [...slotToolsRef.current];
         
-        // Tool Swapping Logic (only when idle)
-        if (transitionPhase === 'idle') {
-          setSlotTools((currentSlotTools) => {
-            let updated = false;
-            const newSlotTools = [...currentSlotTools];
-            
-            for (let i = 0; i < ORBIT_SLOTS; i++) {
-              const currentAngle = (nextRot + (360 / ORBIT_SLOTS) * i) % 360;
-              const prevAngle = prevAnglesRef.current[i];
-              
-              if (prevAngle < 270 && currentAngle >= 270) {
-                 const maxIdx = Math.max(...newSlotTools);
-                 newSlotTools[i] = (maxIdx + 1) % TOTAL_TOOLS;
-                 updated = true;
-              }
-              prevAnglesRef.current[i] = currentAngle;
-            }
-            return updated ? newSlotTools : currentSlotTools;
-          });
+        for (let i = 0; i < ORBIT_SLOTS; i++) {
+          const currentAngle = (nextRot + (360 / ORBIT_SLOTS) * i) % 360;
+          const prevAngle = prevAnglesRef.current[i];
+          
+          if (prevAngle < 270 && currentAngle >= 270) {
+             newSlotTools[i] = nextToolIdxRef.current;
+             nextToolIdxRef.current = (nextToolIdxRef.current + 1) % TOTAL_TOOLS;
+             updated = true;
+          }
+          prevAnglesRef.current[i] = currentAngle;
         }
-        return nextRot;
-      });
+        if (updated) {
+          slotToolsRef.current = newSlotTools;
+          setSlotTools(newSlotTools);
+        }
+      }
 
       animationFrameId = requestAnimationFrame(animate);
     };
@@ -485,11 +487,11 @@ export default function AiNetworkCta() {
                  onMouseLeave={() => setHoveredTool(null)}
                  className="relative group/tool cursor-pointer outline-none"
                >
-                 <div className={`w-12 h-12 rounded-xl border flex items-center justify-center transition-all duration-300 shadow-lg bg-[#0d131f] ${hoveredTool === tool.id ? 'border-[#00e575] text-[#00e575] scale-125 shadow-[0_0_20px_rgba(0,229,117,0.4)] bg-[#0d131f]/90' : 'border-[#182234] text-slate-400 hover:text-slate-200'}`}>
+                 <div className={`w-12 h-12 rounded-xl border flex items-center justify-center transition-all duration-300 shadow-lg bg-[#0d131f] ${hoveredTool === tool.id ? 'border-[#00e575] text-[#00e575] scale-125 shadow-[0_0_20px_rgba(0,229,117,0.4)] bg-[#0d131f]/90' : hoveredTool ? 'border-[#00e575]/50 text-[#00e575]/80 shadow-[0_0_15px_rgba(0,229,117,0.2)]' : 'border-[#182234] text-slate-400 hover:text-slate-200'}`}>
                    <ToolIcon className="w-5 h-5" />
                  </div>
                  
-                 <div className={`absolute -bottom-10 left-1/2 -translate-x-1/2 whitespace-nowrap px-3 py-1.5 bg-[#090d16]/95 backdrop-blur-md border border-[#00e575]/30 text-[#00e575] text-[10px] font-bold rounded-lg transition-all duration-300 pointer-events-none z-[60] shadow-[0_0_15px_rgba(0,229,117,0.1)] ${hoveredTool === tool.id ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}>
+                 <div className={`absolute -bottom-10 left-1/2 -translate-x-1/2 whitespace-nowrap px-3 py-1.5 bg-[#090d16]/95 backdrop-blur-md border text-[10px] font-bold rounded-lg transition-all duration-300 pointer-events-none z-[60] shadow-[0_0_15px_rgba(0,229,117,0.1)] ${hoveredTool === tool.id ? 'border-[#00e575] text-[#00e575] opacity-100 translate-y-0 scale-110' : hoveredTool ? 'border-[#00e575]/50 text-[#00e575]/80 opacity-100 translate-y-0' : 'border-[#00e575]/30 text-[#00e575] opacity-0 -translate-y-2'}`}>
                    {tool.name}
                  </div>
                </button>

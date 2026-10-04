@@ -327,6 +327,16 @@ export default function BootScreen({
               INITIALIZE UPLINK
             </button>
             <div className="text-[10px] text-slate-500 font-mono tracking-widest uppercase">Press Enter to Begin</div>
+
+            <div className="max-w-sm text-center mt-6 p-4 border border-[#00e575]/20 bg-[#00e575]/5 rounded-xl backdrop-blur-sm animate-fadeIn" style={{ animationDelay: '0.5s', animationFillMode: 'both' }}>
+              <h3 className="text-[#00e575] font-bold text-[10px] tracking-widest uppercase mb-1.5 flex items-center justify-center gap-1.5">
+                <Shield className="w-3 h-3" />
+                Privacy Promise: k-Anonymity
+              </h3>
+              <p className="text-[10px] text-slate-400 leading-relaxed font-sans">
+                By initializing the uplink, you acknowledge that all diagnostic tools employ strict <span className="text-[#00e575]">k-anonymity</span> protocols. Your raw sensitive data never leaves your browser.
+              </p>
+            </div>
           </div>
         </>
       )}

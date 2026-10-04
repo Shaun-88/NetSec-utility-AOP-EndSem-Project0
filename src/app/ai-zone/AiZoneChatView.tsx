@@ -2,21 +2,22 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
+import { useRouter } from "next/navigation";
 import {
-  Sparkles,
+  
   Send,
   Trash2,
   Copy,
   Check,
   Square,
   ShieldAlert,
-  ChevronDown,
-  ChevronUp,
   User,
-  Info,
-  Clock,
-  ShieldCheck,
-  Zap,
+  
+  TerminalSquare,
+  
+  
+  ChevronRight,
+  MessageSquare
 } from "lucide-react";
 
 export interface ChatMessage {
@@ -28,44 +29,51 @@ export interface ChatMessage {
 
 const PROMPT_SUGGESTIONS = [
   {
-    icon: "📊",
     title: "Summarize My Scans",
-    prompt: "Can you review my recent diagnostic scans from the last 48 hours and summarize my biggest security gaps or findings?",
+    prompt: "Can you review my recent diagnostic scans from the last 48 hours and summarize my biggest security gaps?",
   },
   {
-    icon: "🛡️",
     title: "Security Headers Guide",
     prompt: "Why are Content-Security-Policy (CSP) and Strict-Transport-Security (HSTS) so important, and how do I configure them?",
   },
   {
-    icon: "🌐",
     title: "Port Reachability",
     prompt: "How does the Port Checker tool work, and what is the difference between an open, closed, and filtered port?",
   },
   {
-    icon: "🔢",
-    title: "Subnetting in Plain English",
-    prompt: "Can you explain what a CIDR /28 subnet means in simple terms, and how many usable host IP addresses it provides?",
-  },
-  {
-    icon: "🔐",
     title: "Hashing vs Encryption",
     prompt: "What is the core difference between cryptographic hashing (like SHA-256) and symmetric encryption (like AES)?",
   },
 ];
 
+// --- MASCOT COMPONENT ---
+const SentinelMascot = ({ state, sizeClass = "w-14 h-14" }: { state: "idle" | "peeking" | "thinking", sizeClass?: string }) => {
+  return (
+    <div className={`sentinel-core ${state} ${sizeClass} flex-shrink-0`}>
+      <div className="sentinel-housing">
+        <div className="sentinel-lens-glare" />
+        <div className="sentinel-aperture" />
+        <div className="sentinel-eye" />
+      </div>
+    </div>
+  );
+};
+
 export default function AiZoneChatView() {
+  const router = useRouter();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [showDisclaimer, setShowDisclaimer] = useState(true);
+  
+  const [mode, setMode] = useState<"recruit" | "operator">("recruit");
+  const [isInputFocused, setIsInputFocused] = useState(false);
+  const [isSafetyModalOpen, setIsSafetyModalOpen] = useState(false);
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-scroll on new messages or streaming tokens
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -74,7 +82,6 @@ export default function AiZoneChatView() {
     scrollToBottom();
   }, [messages, isLoading]);
 
-  // Adjust textarea height dynamically
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
     if (textareaRef.current) {
@@ -83,14 +90,12 @@ export default function AiZoneChatView() {
     }
   };
 
-  // Copy message text to clipboard
   const handleCopy = (id: string, text: string) => {
     navigator.clipboard.writeText(text);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 1500);
   };
 
-  // Stop active generation
   const handleStop = () => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -99,13 +104,11 @@ export default function AiZoneChatView() {
     }
   };
 
-  // Clear conversation
   const handleClearChat = () => {
     handleStop();
     setMessages([]);
   };
 
-  // Send message
   const handleSend = async (messageToSend?: string) => {
     const text = (messageToSend || input).trim();
     if (!text || isLoading) return;
@@ -147,18 +150,12 @@ export default function AiZoneChatView() {
             role: m.role,
             content: m.content,
           })),
+          mode, 
         }),
       });
 
       if (!response.ok) {
-        let errMessage = "Failed to communicate with the AI assistant.";
-        try {
-          const errJson = await response.json();
-          if (errJson.error) errMessage = errJson.error;
-        } catch {
-          // Ignore json parse error
-        }
-        throw new Error(errMessage);
+        throw new Error("Failed to communicate with the AI assistant.");
       }
 
       if (!response.body) {
@@ -185,341 +182,406 @@ export default function AiZoneChatView() {
         );
       }
     } catch (err: unknown) {
-      if (err instanceof Error && err.name === "AbortError") {
-        // Generation manually stopped
-        return;
-      }
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : "An unexpected error occurred while communicating with the AI.";
-
+      if (err instanceof Error && err.name === "AbortError") return;
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === assistantPlaceholderId
-            ? {
-                ...msg,
-                content: `⚠️ **Connection Notice**: ${errorMessage}`,
-              }
+            ? { ...msg, content: "⚠️ System offline or connection interrupted." }
             : msg,
         ),
       );
     } finally {
       setIsLoading(false);
-      abortControllerRef.current = null;
     }
   };
 
-  // Keyboard send (Enter sends, Shift+Enter new line)
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
+  const renderMessageContent = (content: string) => {
+    const parts = content.split(/(\[ACTION:[a-zA-Z0-9-]+\])/g);
+
+    return parts.map((part, index) => {
+      const match = part.match(/\[ACTION:([a-zA-Z0-9-]+)\]/);
+      if (match) {
+        const toolId = match[1];
+        return (
+          <div key={index} className="my-4 p-4 border border-[#00e575]/40 bg-[#0d131f] rounded-xl flex items-center justify-between shadow-[0_0_15px_rgba(0,229,117,0.1)] group">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-[#00e575]/10 text-[#00e575]">
+                <TerminalSquare className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-[#00e575] uppercase tracking-widest">Execute Routine</p>
+                <p className="text-sm font-semibold text-white mt-0.5 capitalize">{toolId.replace(/-/g, ' ')}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => router.push(`/tools/${toolId}`)}
+              className="px-4 py-2 bg-[#00e575] hover:bg-[#00c565] text-[#070a10] text-xs font-bold uppercase rounded-lg transition-colors flex items-center gap-2"
+            >
+              Launch Tool <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        );
+      }
+
+      return (
+        <div key={index} className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-pre:bg-[#080b11] prose-pre:border prose-pre:border-[#182234] prose-pre:rounded-xl">
+          <ReactMarkdown
+            components={{
+              a: ({ ...props }) => <a {...props} className="text-[#00e575] hover:underline" />,
+              code: ({ inline, className, children, ...props }: React.ComponentPropsWithoutRef<"code"> & { inline?: boolean }) => {
+                if (inline) {
+                  return (
+                    <code className="bg-[#121927] text-[#00e575] px-1.5 py-0.5 rounded font-mono text-xs" {...props}>
+                      {children}
+                    </code>
+                  );
+                }
+                return <code className={className} {...props}>{children}</code>;
+              }
+            }}
+          >
+            {part}
+          </ReactMarkdown>
+        </div>
+      );
+    });
   };
 
   return (
-    <div className="max-w-5xl mx-auto flex flex-col h-[calc(100vh-6.5rem)]">
-      {/* Top Header Card */}
-      <div className="p-4 rounded-2xl bg-[#090d16] border border-[#182234] flex flex-col sm:flex-row sm:items-center justify-between gap-3 flex-shrink-0 shadow-lg mb-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#00e575]/10 border border-[#00e575]/40 flex items-center justify-center text-[#00e575] shadow-glow flex-shrink-0">
-            <Sparkles className="w-5 h-5 text-[#00e575]" />
-          </div>
+    <div className="h-[calc(100vh-2rem)] flex flex-col bg-[#070a10] border border-[#182234] rounded-2xl overflow-hidden shadow-2xl relative">
+      
+      {/* --- CUSTOM CSS FOR SENTINEL MASCOT --- */}
+      <style dangerouslySetInnerHTML={{__html: `
+        .sentinel-core {
+          position: relative;
+          border-radius: 50%;
+          background: #070a10;
+          border: 2px solid #182234;
+          box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          perspective: 200px;
+          transition: all 0.4s ease;
+        }
+        .sentinel-housing {
+          width: 75%;
+          height: 75%;
+          border-radius: 50%;
+          background: radial-gradient(circle at 30% 30%, #1a2436, #070a10);
+          border: 1px solid #2a364a;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transform-style: preserve-3d;
+          transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+          position: relative;
+          overflow: hidden;
+        }
+        .sentinel-lens-glare {
+          position: absolute;
+          top: -20%;
+          left: -20%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 50%);
+          border-radius: 50%;
+          pointer-events: none;
+        }
+        .sentinel-aperture {
+          position: absolute;
+          inset: 15%;
+          border-radius: 50%;
+          border: 2px dashed #00e575;
+          opacity: 0.3;
+          transition: all 0.3s ease;
+        }
+        .sentinel-eye {
+          width: 25%;
+          height: 25%;
+          border-radius: 50%;
+          background: #00e575;
+          box-shadow: 0 0 10px 2px rgba(0,229,117,0.4);
+          transition: all 0.3s ease;
+        }
+
+        /* States */
+        .sentinel-core.peeking .sentinel-housing {
+          transform: rotateX(-40deg) translateY(3px);
+        }
+        .sentinel-core.peeking .sentinel-eye {
+          transform: scale(0.8);
+          box-shadow: 0 0 15px 4px rgba(0,229,117,0.6);
+        }
+        .sentinel-core.thinking .sentinel-aperture {
+          border-color: #f59e0b;
+          animation: spin 3s linear infinite;
+          opacity: 0.8;
+        }
+        .sentinel-core.thinking .sentinel-eye {
+          background: #f59e0b;
+          box-shadow: 0 0 20px 5px rgba(245,158,11,0.8);
+          transform: scale(0.9);
+          animation: pulse-eye 1s infinite alternate;
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes pulse-eye { 100% { transform: scale(1.1); box-shadow: 0 0 30px 8px rgba(245,158,11,1); } }
+        
+        .typewriter-glow {
+          text-shadow: 0 0 10px rgba(0,229,117,0.5);
+        }
+      `}} />
+
+      {/* HEADER: Clean Room Design with Mascot and Toggle */}
+      <div className="flex-none p-4 md:p-6 border-b border-[#182234] bg-[#0d131f] flex items-center justify-between z-20">
+        
+        <div className="flex items-center gap-5">
+          {/* Top Corner Sentinel Mascot */}
+          <SentinelMascot 
+            state={isLoading ? 'thinking' : isInputFocused ? 'peeking' : 'idle'} 
+            sizeClass="w-12 h-12 md:w-14 md:h-14" 
+          />
+          
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg font-extrabold text-white tracking-tight">
-                The Big Bro&apos;s AI Cyber Desk
-              </h1>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold uppercase tracking-wider">
-                Senior Mentor
+            <h1 className="text-xl font-black text-white tracking-tight flex items-center gap-2">
+              BIG BRO <span className="text-[#00e575]">NEURAL NET</span>
+            </h1>
+            <p className="text-xs text-slate-400 mt-1 font-mono uppercase tracking-widest">
+              Status: <span className={isLoading ? "text-[#f59e0b]" : isInputFocused ? "text-[#00e575]" : "text-slate-400"}>
+                {isLoading ? 'Processing Data...' : isInputFocused ? 'Observing Input...' : 'Online & Ready'}
               </span>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-slate-400">
-              <span className="flex items-center gap-1 text-[#00e575]">
-                <span className="w-2 h-2 rounded-full bg-[#00e575] animate-pulse" />
-                Gemini Flash Active
-              </span>
-              <span>&bull;</span>
-              <span className="flex items-center gap-1 text-sky-400">
-                <Clock className="w-3 h-3" />
-                48h History Connected
-              </span>
-            </div>
+            </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 self-end sm:self-center">
-          <button
-            onClick={() => setShowDisclaimer(!showDisclaimer)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0d131f] hover:bg-[#121927] border border-[#182234] text-xs font-medium text-slate-300 hover:text-white transition-colors"
-          >
-            <Info className="w-3.5 h-3.5 text-sky-400" />
-            <span>Scope &amp; Safety</span>
-            {showDisclaimer ? (
-              <ChevronUp className="w-3 h-3 text-slate-400" />
-            ) : (
-              <ChevronDown className="w-3 h-3 text-slate-400" />
-            )}
-          </button>
-
-          {messages.length > 0 && (
-            <button
-              onClick={handleClearChat}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0d131f] hover:bg-rose-950/30 border border-[#182234] hover:border-rose-500/30 text-xs font-medium text-slate-400 hover:text-rose-400 transition-colors"
-              title="Clear current conversation"
+        <div className="flex items-center gap-4">
+          {/* Mode Toggle Switch */}
+          <div className="hidden md:flex items-center bg-[#070a10] border border-[#182234] p-1 rounded-xl">
+            <button 
+              onClick={() => setMode("recruit")}
+              className={`px-4 py-1.5 text-xs font-bold uppercase tracking-widest rounded-lg transition-all ${mode === "recruit" ? "bg-[#00e575] text-[#070a10] shadow-[0_0_10px_rgba(0,229,117,0.3)]" : "text-slate-500 hover:text-slate-300"}`}
             >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Clear</span>
+              Recruit
             </button>
-          )}
+            <button 
+              onClick={() => setMode("operator")}
+              className={`px-4 py-1.5 text-xs font-bold uppercase tracking-widest rounded-lg transition-all ${mode === "operator" ? "bg-[#f59e0b] text-[#070a10] shadow-[0_0_10px_rgba(245,158,11,0.3)]" : "text-slate-500 hover:text-slate-300"}`}
+            >
+              Operator
+            </button>
+          </div>
+
+          {/* Safety Protocol Button */}
+          <button 
+            onClick={() => setIsSafetyModalOpen(true)}
+            className="p-2.5 rounded-xl border border-[#00e575]/30 bg-[#00e575]/10 text-[#00e575] hover:bg-[#00e575] hover:text-[#070a10] transition-colors shadow-[0_0_15px_rgba(0,229,117,0.1)] relative group"
+            title="Safety Protocol"
+          >
+            <ShieldAlert className="w-5 h-5" />
+          </button>
         </div>
       </div>
 
-      {/* Scope, Safety & Expectations Banner */}
-      {showDisclaimer && (
-        <div className="mb-3 p-4 rounded-2xl bg-[#0a0f1d] border border-sky-500/30 text-xs text-slate-300 space-y-3 relative overflow-hidden transition-all shadow-md flex-shrink-0">
-          <div className="flex items-center justify-between border-b border-[#182234] pb-2">
-            <div className="flex items-center gap-2 font-bold text-white uppercase tracking-wider text-[11px]">
-              <ShieldCheck className="w-4 h-4 text-[#00e575]" />
-              <span>Assistant Capabilities &amp; Safety Scope</span>
-            </div>
-            <span className="text-[10px] text-slate-400">Strict Blue-Team Policy</span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[11px] leading-relaxed">
-            <div className="p-3 rounded-xl bg-[#060a12] border border-[#182234] space-y-1.5">
-              <span className="font-bold text-[#00e575] flex items-center gap-1.5">
-                <Check className="w-3.5 h-3.5" />
-                What You Can Expect:
-              </span>
-              <ul className="space-y-1 text-slate-300">
-                <li>&bull; <strong className="text-white">Network Protocol Guidance:</strong> Plain-language explanations of CIDR, DNS records, latency, and TLS.</li>
-                <li>&bull; <strong className="text-white">Armoury Tool Navigation:</strong> How to use all 13 tools and interpret their results.</li>
-                <li>&bull; <strong className="text-white">History-Aware Audits:</strong> On-request executive summaries of your recent 48-hour scans.</li>
-              </ul>
-            </div>
-
-            <div className="p-3 rounded-xl bg-[#060a12] border border-[#182234] space-y-1.5">
-              <span className="font-bold text-amber-400 flex items-center gap-1.5">
-                <ShieldAlert className="w-3.5 h-3.5" />
-                What NOT to Expect (Safety Boundaries):
-              </span>
-              <ul className="space-y-1 text-slate-300">
-                <li>&bull; <strong className="text-white">No Offensive Attack Vectors:</strong> Will strictly refuse to write exploits, malware, or brute-force tools.</li>
-                <li>&bull; <strong className="text-white">Zero-Knowledge Privacy:</strong> Never paste real production passwords or private cryptographic keys.</li>
-                <li>&bull; <strong className="text-white">Educational Mentorship:</strong> Provides defensive security best practices, not certified legal audits.</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Chat Messages Stream Area */}
-      <div className="flex-1 overflow-y-auto px-1 space-y-4 pr-1">
+      {/* CHAT AREA */}
+      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 relative scrollbar-thin scrollbar-thumb-[#182234]">
         {messages.length === 0 ? (
-          <div className="h-full flex flex-col justify-center items-center text-center p-6 space-y-6">
-            <div className="space-y-2 max-w-md">
-              <div className="w-14 h-14 rounded-2xl bg-[#00e575]/10 border border-[#00e575]/30 flex items-center justify-center mx-auto text-[#00e575] shadow-glow">
-                <Sparkles className="w-7 h-7" />
-              </div>
-              <h2 className="text-xl font-bold text-white">How Can The Big Bro Help You Today?</h2>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Ask any question about networking protocols, web security posture, tool recommendations, or request a summary of your recent diagnostic scans.
-              </p>
-            </div>
+          <div className="h-full flex flex-col items-center justify-center max-w-2xl mx-auto animate-fadeIn mt-[-20px]">
+            {/* Massive Idle Mascot in Center */}
+            <SentinelMascot state="idle" sizeClass="w-32 h-32 mb-8 opacity-40 shadow-[0_0_50px_rgba(0,229,117,0.1)]" />
+            
+            <h2 className="text-3xl font-black text-white mb-2 tracking-tighter text-center uppercase typewriter-glow">
+              BIG BRO IS WATCHING &amp; PROTECTING YOU.
+            </h2>
+            <p className="text-sm text-slate-400 mb-10 text-center font-mono">
+              Secure Intelligence Uplink Initialized. Select your mode or input a command.
+            </p>
 
-            {/* Quick Starter Chips */}
-            <div className="w-full max-w-2xl grid grid-cols-1 sm:grid-cols-2 gap-2 text-left">
-              {PROMPT_SUGGESTIONS.map((item, idx) => (
+            {/* Prompt Instructions */}
+            <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
+              {PROMPT_SUGGESTIONS.map((suggestion, idx) => (
                 <button
                   key={idx}
-                  onClick={() => handleSend(item.prompt)}
-                  className="p-3.5 rounded-xl bg-[#0d131f] hover:bg-[#121927] border border-[#182234] hover:border-[#00e575]/40 transition-all text-xs group"
+                  onClick={() => handleSend(suggestion.prompt)}
+                  className="text-left p-4 rounded-xl border border-[#182234] bg-[#0d131f] hover:border-[#00e575]/40 hover:bg-[#00e575]/5 transition-all group"
                 >
-                  <div className="flex items-center gap-2 mb-1">
-                    <span>{item.icon}</span>
-                    <strong className="text-white group-hover:text-[#00e575] transition-colors">
-                      {item.title}
-                    </strong>
+                  <div className="flex items-center gap-2 mb-2">
+                    <MessageSquare className="w-4 h-4 text-slate-500 group-hover:text-[#00e575] transition-colors" />
+                    <h3 className="font-bold text-sm text-slate-300 group-hover:text-[#00e575] transition-colors">
+                      {suggestion.title}
+                    </h3>
                   </div>
-                  <p className="text-[11px] text-slate-400 line-clamp-2">
-                    {item.prompt}
+                  <p className="text-xs text-slate-500 leading-relaxed line-clamp-2 group-hover:text-slate-400 transition-colors">
+                    {suggestion.prompt}
                   </p>
                 </button>
               ))}
             </div>
           </div>
         ) : (
-          messages.map((message) => {
-            const isUser = message.role === "user";
+          messages.map((m, index) => {
+            // Check if this is the very latest message in the array and if it belongs to assistant
+            const isLatestAssistantMessage = index === messages.length - 1 && m.role === "assistant";
+            // The mascot in the chat should be "thinking" if it's the latest message and still loading
+            const chatMascotState = (isLatestAssistantMessage && isLoading) ? "thinking" : "idle";
 
             return (
-              <div
-                key={message.id}
-                className={`flex gap-3 ${isUser ? "justify-end" : "justify-start"}`}
-              >
-                {!isUser && (
-                  <div className="w-8 h-8 rounded-xl bg-[#00e575]/10 border border-[#00e575]/40 flex items-center justify-center text-[#00e575] flex-shrink-0 mt-1 shadow-glow">
-                    <Sparkles className="w-4 h-4" />
-                  </div>
+              <div key={m.id} className={`flex gap-4 ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                
+                {/* Assistant Chat Bubble Avatar - The Sentinel! */}
+                {m.role === "assistant" && (
+                  <SentinelMascot state={chatMascotState} sizeClass="w-10 h-10 shadow-lg" />
                 )}
 
+                {/* Message Bubble */}
                 <div
-                  className={`max-w-[85%] rounded-2xl p-4 space-y-2 shadow-md ${
-                    isUser
-                      ? "bg-[#182234] text-white border border-sky-500/30 rounded-tr-sm"
-                      : "bg-[#0b101c] text-slate-200 border border-[#1a263c] rounded-tl-sm"
+                  className={`relative max-w-[85%] md:max-w-[75%] rounded-2xl p-5 ${
+                    m.role === "user"
+                      ? "bg-[#00e575]/10 text-white border border-[#00e575]/20 rounded-tr-none"
+                      : "bg-[#0d131f] text-slate-200 border border-[#182234] rounded-tl-none shadow-lg"
                   }`}
                 >
-                  <div className="flex items-center justify-between gap-4 text-[10px] text-slate-400 border-b border-white/5 pb-1">
-                    <span className="font-bold uppercase tracking-wider text-slate-300">
-                      {isUser ? "You (Agent)" : "The Big Bro (Mentor)"}
-                    </span>
-                    <span>{message.timestamp}</span>
-                  </div>
-
-                  {/* Message Content */}
-                  <div className="text-xs leading-relaxed font-sans space-y-2 overflow-x-auto">
-                    {message.content ? (
-                      <ReactMarkdown
-                        components={{
-                          p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-                          strong: ({ children }) => <strong className="font-bold text-white">{children}</strong>,
-                          ul: ({ children }) => <ul className="space-y-1 list-disc pl-4 mb-2">{children}</ul>,
-                          ol: ({ children }) => <ol className="space-y-1 list-decimal pl-4 mb-2">{children}</ol>,
-                          li: ({ children }) => <li className="text-slate-300">{children}</li>,
-                          code: ({ children }) => (
-                            <code className="px-1.5 py-0.5 rounded bg-[#131d2e] text-[#00e575] font-sans border border-[#1d2c44]">
-                              {children}
-                            </code>
-                          ),
-                          pre: ({ children }) => (
-                            <pre className="p-3 rounded-xl bg-[#060a12] border border-[#182234] text-emerald-400 overflow-x-auto my-2 text-[11px] font-sans leading-relaxed">
-                              {children}
-                            </pre>
-                          ),
-                        }}
-                      >
-                        {message.content}
-                      </ReactMarkdown>
-                    ) : (
-                      <div className="flex items-center gap-1.5 py-1 text-slate-400">
-                        <span className="w-2 h-2 rounded-full bg-[#00e575] animate-ping" />
-                        <span className="text-[11px]">The Big Bro is formulating diagnostics...</span>
+                  {/* Content */}
+                  <div className="mb-2">
+                    {m.role === "assistant" && m.content === "" && isLoading ? (
+                      <div className="flex items-center gap-2 text-[#f59e0b]">
+                        <span className="animate-pulse font-mono text-xs uppercase tracking-widest">Decrypting response stream...</span>
                       </div>
+                    ) : (
+                      renderMessageContent(m.content)
                     )}
                   </div>
 
-                  {/* Actions for Assistant Message */}
-                  {!isUser && message.content && (
-                    <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[11px]">
-                      <span className="text-slate-500">Security Mentor Response</span>
+                  {/* Footer (Timestamp & Copy) */}
+                  <div className={`flex items-center justify-between mt-3 pt-3 border-t ${m.role === "user" ? "border-[#00e575]/20" : "border-[#182234]"}`}>
+                    <span className={`text-[10px] font-mono ${m.role === "user" ? "text-[#00e575]" : "text-slate-500"}`}>
+                      {m.timestamp}
+                    </span>
+                    {m.role === "assistant" && m.content && (
                       <button
-                        onClick={() => handleCopy(message.id, message.content)}
-                        className="flex items-center gap-1 text-slate-400 hover:text-white transition-colors"
+                        onClick={() => handleCopy(m.id, m.content)}
+                        className="text-slate-500 hover:text-white transition-colors"
+                        title="Copy Output"
                       >
-                        {copiedId === message.id ? (
-                          <>
-                            <Check className="w-3 h-3 text-[#00e575]" />
-                            <span className="text-[#00e575]">Copied</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3 h-3" />
-                            <span>Copy</span>
-                          </>
-                        )}
+                        {copiedId === m.id ? <Check className="w-3.5 h-3.5 text-[#00e575]" /> : <Copy className="w-3.5 h-3.5" />}
                       </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
 
-                {isUser && (
-                  <div className="w-8 h-8 rounded-xl bg-[#182234] border border-sky-500/30 flex items-center justify-center text-sky-400 flex-shrink-0 mt-1">
-                    <User className="w-4 h-4" />
+                {/* User Avatar */}
+                {m.role === "user" && (
+                  <div className="w-10 h-10 flex-shrink-0 rounded-full bg-[#182234] border-2 border-[#2a364a] flex items-center justify-center text-slate-400 mt-1 shadow-md">
+                    <User className="w-5 h-5" />
                   </div>
                 )}
               </div>
-            );
+            )
           })
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Bottom Input Section */}
-      <div className="mt-3 flex-shrink-0 space-y-2">
-        {/* Quick prompt bar when conversation is active */}
-        {messages.length > 0 && (
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 text-[11px] scrollbar-none">
-            <span className="text-slate-500 flex-shrink-0 flex items-center gap-1">
-              <Zap className="w-3 h-3 text-amber-400" />
-              Follow-ups:
-            </span>
-            <button
-              onClick={() => handleSend("What specific steps should I take next?")}
-              className="px-2.5 py-1 rounded-lg bg-[#0d131f] hover:bg-[#121927] border border-[#182234] text-slate-300 hover:text-white flex-shrink-0"
-            >
-              What steps should I take next?
-            </button>
-            <button
-              onClick={() => handleSend("Explain how to test this with the Port Checker")}
-              className="px-2.5 py-1 rounded-lg bg-[#0d131f] hover:bg-[#121927] border border-[#182234] text-slate-300 hover:text-white flex-shrink-0"
-            >
-              How to test with Port Checker?
-            </button>
-            <button
-              onClick={() => handleSend("Provide an example Nginx configuration")}
-              className="px-2.5 py-1 rounded-lg bg-[#0d131f] hover:bg-[#121927] border border-[#182234] text-slate-300 hover:text-white flex-shrink-0"
-            >
-              Example Nginx config
-            </button>
+      {/* INPUT AREA */}
+      <div className="flex-none p-4 md:p-6 border-t border-[#182234] bg-[#0d131f] relative z-20">
+        <div className="max-w-4xl mx-auto relative flex items-end gap-3">
+          
+          <button
+            onClick={handleClearChat}
+            disabled={messages.length === 0 || isLoading}
+            className="p-3.5 rounded-xl bg-[#080b11] border border-[#182234] text-slate-500 hover:text-red-400 hover:border-red-400/30 transition-all disabled:opacity-50"
+            title="Purge Memory"
+          >
+            <Trash2 className="w-5 h-5" />
+          </button>
+
+          <div className="flex-1 relative">
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={handleInputChange}
+              onFocus={() => setIsInputFocused(true)}
+              onBlur={() => setIsInputFocused(false)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+              placeholder={mode === "recruit" ? "Ask Big Bro anything..." : "Awaiting command..."}
+              className="w-full bg-[#080b11] border border-[#182234] rounded-xl pl-4 pr-12 py-3.5 text-sm text-white focus:outline-none focus:border-[#00e575]/50 transition-colors resize-none overflow-y-auto max-h-[180px] min-h-[52px]"
+              rows={1}
+            />
           </div>
-        )}
 
-        {/* Input Bar */}
-        <div className="relative rounded-2xl bg-[#090d16] border border-[#182234] focus-within:border-[#00e575] transition-colors p-2 flex items-end gap-2 shadow-xl">
-          <textarea
-            ref={textareaRef}
-            rows={1}
-            value={input}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask about network protocols, security headers, tool advice, or past scan summaries..."
-            className="flex-1 max-h-40 bg-transparent text-xs text-white placeholder-slate-500 focus:outline-none resize-none px-2 py-1.5 font-sans leading-relaxed"
-          />
+          {isLoading ? (
+            <button
+              onClick={handleStop}
+              className="absolute right-[68px] bottom-3.5 p-1 rounded-md bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white transition-colors"
+            >
+              <Square className="w-4 h-4 fill-current" />
+            </button>
+          ) : null}
 
-          <div className="flex items-center gap-1.5 flex-shrink-0 pb-0.5">
-            {isLoading ? (
-              <button
-                onClick={handleStop}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs transition-colors shadow-glow"
-              >
-                <Square className="w-3.5 h-3.5 fill-current" />
-                <span className="hidden sm:inline">Stop</span>
-              </button>
-            ) : (
-              <button
-                onClick={() => handleSend()}
-                disabled={!input.trim()}
-                className={`p-2.5 rounded-xl font-semibold text-xs transition-all ${
-                  input.trim()
-                    ? "bg-[#00e575] text-[#080b11] shadow-glow hover:bg-[#00e575]/90 cursor-pointer"
-                    : "bg-[#182234] text-slate-500 cursor-not-allowed"
-                }`}
-                aria-label="Send message"
-              >
-                <Send className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between text-[10px] text-slate-500 px-2">
-          <span>Press Enter to send, Shift + Enter for new line</span>
-          <span>Google Gemini Flash &bull; 48-Hour Scans Synchronized</span>
+          <button
+            onClick={() => handleSend()}
+            disabled={!input.trim() || isLoading}
+            className="p-3.5 rounded-xl bg-[#00e575] hover:bg-[#00c565] text-[#070a10] font-bold shadow-[0_0_15px_rgba(0,229,117,0.3)] transition-all disabled:opacity-50 disabled:shadow-none disabled:bg-[#182234] disabled:text-slate-500"
+          >
+            <Send className="w-5 h-5" />
+          </button>
         </div>
       </div>
+
+      {/* --- SAFETY PROTOCOL MODAL --- */}
+      {isSafetyModalOpen && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm cursor-pointer animate-fadeIn"
+          onClick={() => setIsSafetyModalOpen(false)}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-lg bg-[#070a10]/95 backdrop-blur-xl border border-[#00e575]/40 rounded-2xl shadow-[0_0_40px_rgba(0,229,117,0.15)] overflow-hidden cursor-default animate-scaleIn"
+          >
+            <div className="h-16 bg-[#00e575]/10 border-b border-[#00e575]/30 relative flex items-center px-6">
+               <div className="absolute inset-0 noir-scanline opacity-50 pointer-events-none" />
+               <ShieldAlert className="w-5 h-5 text-[#00e575] mr-3" />
+               <h2 className="text-lg font-bold text-white tracking-widest uppercase">Safety Protocol</h2>
+            </div>
+
+            <div className="p-6 space-y-6">
+              <div className="p-4 rounded-xl bg-[#0d131f] border border-[#182234]">
+                <h3 className="text-[#00e575] font-bold text-xs uppercase tracking-widest mb-2 flex items-center gap-2">
+                  <Check className="w-4 h-4" /> Green Clearance (Authorized)
+                </h3>
+                <ul className="text-sm text-slate-300 space-y-2 list-disc pl-5 marker:text-[#00e575]">
+                  <li>Analyze network configurations and explain cryptographic concepts.</li>
+                  <li>Provide context and summaries for your diagnostic scan history.</li>
+                  <li>Guide you directly to specific security tools via Action Cards.</li>
+                </ul>
+              </div>
+
+              <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30">
+                <h3 className="text-red-400 font-bold text-xs uppercase tracking-widest mb-2 flex items-center gap-2">
+                  <Square className="w-4 h-4 fill-current" /> Red Restrictions (Denied)
+                </h3>
+                <ul className="text-sm text-slate-300 space-y-2 list-disc pl-5 marker:text-red-400">
+                  <li>Store, remember, or log plaintext passwords.</li>
+                  <li>Execute actual denial-of-service (DDoS) requests or malicious payloads.</li>
+                  <li>Directly hack or penetrate external servers without authorization.</li>
+                </ul>
+              </div>
+
+              <button 
+                onClick={() => setIsSafetyModalOpen(false)}
+                className="w-full py-3 bg-[#00e575] text-[#070a10] font-bold uppercase tracking-widest rounded-xl hover:bg-[#00c565] transition-colors"
+              >
+                Acknowledge &amp; Return
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

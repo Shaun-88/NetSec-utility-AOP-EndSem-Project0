@@ -51,6 +51,7 @@ export async function saveToolHistory(
   data: unknown,
   target?: string | null,
   aiContext?: ToolHistoryAIContext,
+  retentionLimit: number = 100,
 ): Promise<ToolHistoryRecord | null> {
   if (!process.env.POSTGRES_URL && !process.env.DATABASE_URL) {
     return null;
@@ -71,6 +72,28 @@ export async function saveToolHistory(
         data: enrichedData as Record<string, unknown>,
       })
       .returning();
+
+    // Enforce the strict rolling limit for the user (default 100)
+    // 1. Find the timestamp of the Nth most recent log
+    const logN = await db
+      .select({ ranAt: toolHistory.ranAt })
+      .from(toolHistory)
+      .where(eq(toolHistory.userId, userId))
+      .orderBy(desc(toolHistory.ranAt))
+      .offset(retentionLimit - 1)
+      .limit(1);
+
+    // 2. If an Nth log exists, delete everything strictly older than it
+    if (logN.length > 0) {
+      await db
+        .delete(toolHistory)
+        .where(
+          and(
+            eq(toolHistory.userId, userId),
+            lt(toolHistory.ranAt, logN[0].ranAt)
+          )
+        );
+    }
 
     return inserted[0] || null;
   } catch (err) {

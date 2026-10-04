@@ -3,6 +3,9 @@
 import React, { useState, useEffect } from "react";
 import AppShell from "@/components/AppShell";
 import AiNetworkCta from "@/components/AiNetworkCta";
+import TrainingGroundsDoor from "@/components/TrainingGroundsDoor";
+import CommandDeckFooter from "@/components/CommandDeckFooter";
+import CommandEntryButton from "@/components/CommandEntryButton";
 import { tools } from "@/registry/tools";
 import Link from "next/link";
 import {
@@ -181,7 +184,10 @@ export default function HomePage() {
           </div>
         </div>
 
-        <AiNetworkCta />
+        <div className="space-y-4">
+          <AiNetworkCta />
+          <TrainingGroundsDoor />
+        </div>
 
         {/* Tool Filter Tabs */}
         <div className="flex items-center justify-between flex-wrap gap-4 border-b border-[#182234] pb-4">
@@ -307,6 +313,9 @@ export default function HomePage() {
             );
           })}
         </div>
+
+        <CommandEntryButton />
+        <CommandDeckFooter />
       </div>
     </AppShell>
   );

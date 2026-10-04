@@ -17,6 +17,7 @@ const chatInputSchema = z.object({
     )
     .min(1)
     .max(50),
+  mode: z.enum(["recruit", "operator"]).default("recruit"),
 });
 
 /**
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Rate limit: 25 requests per minute per user
-  const allowed = checkRateLimit(`${userId}:ai-chat`, 25, 60_000);
+  const allowed = await checkRateLimit(`${userId}:ai-chat`, 25, 60_000);
   if (!allowed) {
     return NextResponse.json(
       { error: "Rate limit reached. Please wait a moment before sending another message." },
@@ -63,7 +64,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { messages } = parseResult.data;
+  const { messages, mode } = parseResult.data;
 
   const apiKey =
     process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
@@ -86,7 +87,16 @@ export async function POST(req: NextRequest) {
     console.warn("[AI Zone] Failed to load history context:", err);
   }
 
-  const fullSystemInstruction = `${BIG_BRO_SYSTEM_PROMPT}\n\n${historyContext}`;
+  const modeInstruction = mode === "recruit" 
+    ? "MODE: RECRUIT. Act as a patient, beginner-friendly mentor. Explain concepts using simple analogies before diving into technical details. Be encouraging."
+    : "MODE: OPERATOR. Act as a ruthless, highly-efficient terminal CLI. Be extremely concise, use raw technical jargon, give raw data and commands, and skip all hand-holding.";
+    
+  const actionCardInstruction = `IMPORTANT: You have the ability to launch Action Cards in the chat for the user to navigate to tools. 
+When you want the user to use a specific tool from the armoury, output exactly this string on its own line: [ACTION:tool-id]
+Available tool IDs: dns-lookup, pwned-password, breach-checker, whois, tls-checker, website-security-report, security-headers
+Example output: "You should run a full diagnostic scan here:\n\n[ACTION:website-security-report]"`;
+
+  const fullSystemInstruction = `${BIG_BRO_SYSTEM_PROMPT}\n\n${modeInstruction}\n\n${actionCardInstruction}\n\n${historyContext}`;
 
   const ai = new GoogleGenAI({ apiKey });
 

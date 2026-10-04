@@ -11,6 +11,10 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["var(--font-sans)", "sans-serif"],
+        display: ["var(--font-display)", "sans-serif"],
+      },
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
@@ -25,16 +29,6 @@ const config: Config = {
           red: "#ef4444",
           muted: "#64748b",
         },
-      },
-      fontFamily: {
-        sans: [
-          "Inter",
-          "-apple-system",
-          "BlinkMacSystemFont",
-          "Segoe UI",
-          "Roboto",
-          "sans-serif",
-        ],
       },
       boxShadow: {
         glow: "0 0 20px -5px rgba(0, 229, 117, 0.3)",

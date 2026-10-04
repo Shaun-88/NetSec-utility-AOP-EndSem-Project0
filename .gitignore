@@ -29,3 +29,6 @@ scratch/
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# Training Grounds Source Videos
+assets-source/

@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Hexagon, ChevronRight } from "lucide-react";
+import { Hexagon, ChevronsRight } from "lucide-react";
 
 // Custom Heavy Hacker & Laptop SVG Icon
 const HackerIcon = ({ className }: { className?: string }) => (
@@ -74,12 +74,12 @@ export default function TrainingGroundsDoor() {
                 <div className="space-y-1.5">
                   <div className="flex items-center gap-3 mb-1">
                     {/* Glowing LED Badge */}
-                    <span className="px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-widest bg-amber-500/20 text-amber-400 border border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.3),inset_0_0_10px_rgba(245,158,11,0.2)] flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shadow-[0_0_5px_#f59e0b]" />
-                      Learning Sandbox
+                    <span className="px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-widest bg-[#00e575]/15 text-[#00e575] border border-[#00e575]/50 shadow-[0_0_15px_rgba(0,229,117,0.3),inset_0_0_10px_rgba(0,229,117,0.15)] flex items-center gap-2">
+                      <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00e575] opacity-75" /><span className="relative inline-flex rounded-full h-2 w-2 bg-[#00e575] shadow-[0_0_8px_#00e575]" /></span>
+                      LIVE CYBER RANGE
                     </span>
-                    <span className="text-[10px] text-slate-500 font-mono hidden sm:inline">
-                      {'// OFFLINE //'}
+                    <span className="text-[10px] text-emerald-400/90 font-mono hidden sm:inline tracking-wider font-bold">
+                      {"// 4 DEFENSE LABS ARMED & ONLINE //"}
                     </span>
                   </div>
                   <h2 className="text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white via-slate-200 to-slate-500 tracking-tighter uppercase group-hover:text-amber-100 transition-colors drop-shadow-lg">
@@ -93,11 +93,13 @@ export default function TrainingGroundsDoor() {
 
               {/* Right Side: Heavy Action Button */}
               <div className="flex-shrink-0 flex items-center justify-center w-full md:w-auto mt-4 md:mt-0">
-                <div className="w-full md:w-auto px-8 py-5 rounded-lg bg-gradient-to-b from-slate-700 via-slate-800 to-slate-900 border-t border-t-slate-600 border-x border-x-slate-800 border-b-2 border-b-black flex items-center justify-between gap-4 group-hover:border-t-amber-400 group-hover:from-amber-600/20 group-hover:to-slate-900 shadow-[0_5px_15px_rgba(0,0,0,0.8)] transition-all duration-300">
-                  <span className="text-sm font-extrabold text-slate-300 group-hover:text-amber-400 tracking-[0.2em] uppercase drop-shadow-md">
-                    Initialize
-                  </span>
-                  <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-amber-400 group-hover:translate-x-2 transition-transform duration-300 drop-shadow-[0_0_5px_rgba(245,158,11,0.5)]" />
+                <div className="relative w-full md:w-auto px-8 py-5 rounded-xl bg-gradient-to-b from-[#0e1625] via-[#0a0f18] to-[#05080c] border border-slate-700/80 border-t-slate-600 shadow-[0_5px_15px_rgba(0,0,0,0.8)] flex items-center justify-between gap-5 transition-all duration-300 overflow-hidden group-hover:border-[#00e575] group-hover:shadow-[0_0_35px_rgba(0,229,117,0.4),inset_0_0_20px_rgba(0,229,117,0.12)] group-hover:scale-[1.03]">
+                  {/* Neon Hydraulic Light Shimmer on Hover */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#00e575]/15 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out pointer-events-none" />
+                  <div className="flex flex-col text-left"><span className="text-[9px] font-mono font-bold text-slate-500 group-hover:text-emerald-400 tracking-widest uppercase transition-colors">STATUS: ARMED</span><span className="text-sm font-black text-white group-hover:text-[#00e575] tracking-[0.2em] uppercase drop-shadow-md transition-colors">
+                    INITIALIZE CHAMBER
+                  </span></div>
+                  <div className="w-9 h-9 rounded-lg bg-black/60 border border-slate-700 group-hover:border-[#00e575]/60 flex items-center justify-center group-hover:bg-[#00e575]/10 transition-all shadow-inner"><ChevronsRight className="w-5 h-5 text-slate-400 group-hover:text-[#00e575] group-hover:translate-x-1 transition-all duration-300 drop-shadow-[0_0_10px_rgba(0,229,117,0.8)] animate-pulse" /></div>
                 </div>
               </div>
 

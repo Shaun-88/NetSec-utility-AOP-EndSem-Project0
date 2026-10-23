@@ -229,7 +229,7 @@ export async function executeToolFrontDoor(
         };
         // Log to a dedicated system user ID to isolate errors
         await saveToolHistory("SYSTEM_ERROR", "RUNTIME_CRASH", errorData, null, undefined, 50);
-      } catch(e) {}
+      } catch {}
     }
 
     if (isZodError) {

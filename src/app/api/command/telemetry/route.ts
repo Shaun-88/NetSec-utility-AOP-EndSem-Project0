@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { toolHistory, usersProfile } from "@/db/schema";
 import { desc, count, ne, eq, and } from "drizzle-orm";
-import { headers } from "next/headers";
+
 
 export const dynamic = "force-dynamic";
 

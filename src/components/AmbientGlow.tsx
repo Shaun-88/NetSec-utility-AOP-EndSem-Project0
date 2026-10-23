@@ -12,24 +12,43 @@ export function AmbientGlow() {
     let targetY = currentY;
     let animationFrameId: number;
 
+    let isRunning = false;
+
+    const startLoop = () => {
+      if (!isRunning) {
+        isRunning = true;
+        animationFrameId = requestAnimationFrame(render);
+      }
+    };
+
     const handleMouseMove = (e: MouseEvent) => {
       targetX = e.clientX;
       targetY = e.clientY;
+      startLoop();
     };
 
     const render = () => {
+      const dx = targetX - currentX;
+      const dy = targetY - currentY;
+
       // Lerp (Linear Interpolation) for buttery smooth trailing
-      currentX += (targetX - currentX) * 0.12;
-      currentY += (targetY - currentY) * 0.12;
+      currentX += dx * 0.12;
+      currentY += dy * 0.12;
 
       document.documentElement.style.setProperty("--mouse-x", `${currentX}px`);
       document.documentElement.style.setProperty("--mouse-y", `${currentY}px`);
+
+      // If at rest, sleep RAF loop until next mouse move to eliminate idle CPU drain
+      if (Math.abs(dx) < 0.2 && Math.abs(dy) < 0.2) {
+        isRunning = false;
+        return;
+      }
 
       animationFrameId = requestAnimationFrame(render);
     };
 
     window.addEventListener("mousemove", handleMouseMove, { passive: true });
-    render();
+    startLoop();
 
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);

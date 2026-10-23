@@ -66,7 +66,6 @@ export const playSuccessChime = () => {
 
   const osc1 = ctx.createOscillator();
   const osc2 = ctx.createOscillator();
-  const osc = ctx.createOscillator();
   const gainNode = ctx.createGain();
 
   osc1.type = "sine";

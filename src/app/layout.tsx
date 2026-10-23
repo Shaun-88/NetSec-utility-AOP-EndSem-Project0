@@ -8,6 +8,7 @@ const orbitron = Orbitron({ subsets: ["latin"], variable: "--font-display" });
 import BootProvider from "@/components/BootProvider";
 import { AmbientGlow } from "@/components/AmbientGlow";
 import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata: Metadata = {
   title: "The Big Bro's NetSec Armoury",
@@ -27,6 +28,7 @@ export default function RootLayout({
           <AmbientGlow />
           <BootProvider>{children}</BootProvider>
           <Analytics />
+          <SpeedInsights />
         </ThemeProvider>
       </body>
     </html>

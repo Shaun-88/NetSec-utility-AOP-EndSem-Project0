@@ -51,6 +51,9 @@ export default function IpLookupTool() {
 
       const data = await res.json();
       setResult(data);
+      if (!queryTarget && data?.data?.ip) {
+        setTarget(data.data.ip);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to perform IP lookup.");
     } finally {

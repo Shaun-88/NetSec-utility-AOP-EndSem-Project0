@@ -45,6 +45,27 @@ const serverModule: ToolServerModule<ValidatedIpLookupInput, IpLookupData> = {
           throw new Error(`Unable to resolve hostname '${targetQuery}'. Check the domain spelling.`);
         }
       }
+    } else {
+      // 1b. Self-detection: Extract client IP from incoming reverse proxy headers (Vercel/Cloudflare)
+      try {
+        const { headers } = await import("next/headers");
+        const headerList = await headers();
+        const forwardedFor = headerList.get("x-forwarded-for");
+        const realIp = headerList.get("x-real-ip");
+        const clientCandidate = forwardedFor
+          ? forwardedFor.split(",")[0].trim()
+          : realIp?.trim();
+
+        if (
+          clientCandidate &&
+          net.isIP(clientCandidate) &&
+          !isIpBlocked(clientCandidate)
+        ) {
+          targetIp = clientCandidate;
+        }
+      } catch {
+        // Headers unavailable in mock/isolated contexts; fallback to provider detection
+      }
     }
 
     // 2. Fetch IP intelligence data via safeFetch
